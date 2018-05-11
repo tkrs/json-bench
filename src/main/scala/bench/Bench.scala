@@ -5,32 +5,6 @@ import java.util.concurrent.TimeUnit
 import io.circe.{Encoder, Json}
 import org.openjdk.jmh.annotations._
 
-object State {
-
-  case class Foo[F[_]](i: Int, foo: F[Foo[F]])
-
-  private def genFoo(i: Int, foo: Foo[Option]): Foo[Option] = {
-    if (i == 0) foo
-    else genFoo(i - 1, Foo(i, Some(foo)))
-  }
-
-  @State(Scope.Thread)
-  class Data {
-    val foo10_10: Seq[Foo[Option]] = Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(10).toList
-    val foo100_10: Seq[Foo[Option]] = Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(10).toList
-    val foo10_100: Seq[Foo[Option]] = Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(100).toList
-    val foo100_100: Seq[Foo[Option]] = Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(100).toList
-
-    @inline def get(i: Int, j: Int): Seq[Foo[Option]] = (i, j) match {
-      case (10, 10) => foo10_10
-      case (100, 10) => foo100_10
-      case (10, 100) => foo10_100
-      case (100, 100) => foo100_100
-      case (_, _) => ???
-    }
-  }
-}
-
 // jmh:run -jvmArgsAppend "-Xss5m"
 
 @State(Scope.Thread)
@@ -88,16 +62,29 @@ class SprayJsonBench extends Bench {
   def encode0(foo: Seq[Foo[Option]]): String = foo.toJson.compactPrint
 }
 
-//class PlayJsonBench extends Bench {
-//  import play.api.libs.json._
-//  import play.api.libs.functional.syntax._
-//  import State._
-//
-//  implicit val fooWrites: Writes[Foo[Option]] =
-//    (JsPath \ "foo").write[Foo[Option]] { (a: JsValue) => println(a); a }
-//
-////  implicit def fooNullableWrites[A: Writes]: Writes[Option[A]] =
-////    (JsPath \ "foo").writeNullable[A]
-//
-//  def encode(data: Data): String = Json.toJson(Option(data.get(depth))).toString()
-//}
+object State {
+
+  case class Foo[F[_]](i: Int, foo: F[Foo[F]])
+
+  private def genFoo(i: Int, foo: Foo[Option]): Foo[Option] = {
+    if (i == 0) foo
+    else genFoo(i - 1, Foo(i, Some(foo)))
+  }
+
+  @State(Scope.Thread)
+  class Data {
+    val foo10_10: Seq[Foo[Option]] = Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(10).toList
+    val foo100_10: Seq[Foo[Option]] = Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(10).toList
+    val foo10_100: Seq[Foo[Option]] = Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(100).toList
+    val foo100_100: Seq[Foo[Option]] = Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(100).toList
+
+    @inline def get(i: Int, j: Int): Seq[Foo[Option]] = (i, j) match {
+      case (10, 10) => foo10_10
+      case (100, 10) => foo100_10
+      case (10, 100) => foo10_100
+      case (100, 100) => foo100_100
+      case (_, _) => ???
+    }
+  }
+}
+
