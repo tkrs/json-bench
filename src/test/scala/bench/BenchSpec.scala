@@ -26,6 +26,7 @@ class BenchSpec extends FunSuite {
 
   test("CirceBench")(benchTest(new CirceBench))
   test("CirceAutoBench")(benchTest(new CirceAutoBench))
+  test("ArgonautBench")(benchTest(new ArgonautBench))
   test("SprayJsonBench")(benchTest(new SprayJsonBench))
   // test("PlayJsonBench")(benchTest(new PlayJsonBench))
 }

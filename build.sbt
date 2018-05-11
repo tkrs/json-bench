@@ -12,6 +12,7 @@ libraryDependencies ++= Seq(
   circeCore,
   circeGeneric,
   circeParser,
+  argonaut,
   scalaTest % Test
 )
 

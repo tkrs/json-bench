@@ -2,7 +2,6 @@ package bench
 
 import java.util.concurrent.TimeUnit
 
-import io.circe.{Encoder, Json}
 import org.openjdk.jmh.annotations._
 
 // jmh:run -jvmArgsAppend "-Xss5m"
@@ -37,6 +36,7 @@ class CirceAutoBench extends Bench {
 }
 
 class CirceBench extends Bench {
+  import io.circe.{Encoder, Json}
   import io.circe.syntax._
   import State._
 
@@ -60,6 +60,20 @@ class SprayJsonBench extends Bench {
   }
 
   def encode0(foo: Seq[Foo[Option]]): String = foo.toJson.compactPrint
+}
+class ArgonautBench extends Bench {
+  import argonaut._, Argonaut._
+  import State._
+
+  implicit val encodeFoo: EncodeJson[Foo[Option]] = EncodeJson[Foo[Option]] {
+    case Foo(i, Some(foo)) => Json("i" -> Json.jNumber(i), "foo" -> foo.asJson)
+    case Foo(i, _) => Json("i" -> Json.jNumber(i), "foo" -> Json.jNull)
+  }
+
+//  implicit def codecFoo: CodecJson[Foo[Option]] =
+//    casecodec2(Foo.apply[Option], Foo.unapply[Option])("i", "foo")
+
+  def encode0(foos: Seq[Foo[Option]]): String = foos.toList.asJson.nospaces
 }
 
 object State {
@@ -87,4 +101,3 @@ object State {
     }
   }
 }
-
