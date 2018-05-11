@@ -2,6 +2,7 @@ package bench
 
 import java.util.concurrent.TimeUnit
 
+import io.circe.{Encoder, Json}
 import org.openjdk.jmh.annotations._
 
 object State {
@@ -15,14 +16,17 @@ object State {
 
   @State(Scope.Thread)
   class Data {
-    val foo10: Foo[Option] = genFoo(9, Foo(10, Option.empty[Foo[Option]]))
-    val foo100: Foo[Option] = genFoo(99, Foo(100, Option.empty[Foo[Option]]))
-    val foo1000: Foo[Option] = genFoo(999, Foo(1000, Option.empty[Foo[Option]]))
+    val foo10_10: Seq[Foo[Option]] = Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(10).toList
+    val foo100_10: Seq[Foo[Option]] = Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(10).toList
+    val foo10_100: Seq[Foo[Option]] = Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(100).toList
+    val foo100_100: Seq[Foo[Option]] = Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(100).toList
 
-    @inline def get(i: Int): Foo[Option] = i match {
-      case 10 => foo10
-      case 100 => foo100
-      case 1000 => foo1000
+    @inline def get(i: Int, j: Int): Seq[Foo[Option]] = (i, j) match {
+      case (10, 10) => foo10_10
+      case (100, 10) => foo100_10
+      case (10, 100) => foo10_100
+      case (100, 100) => foo100_100
+      case (_, _) => ???
     }
   }
 }
@@ -37,34 +41,51 @@ object State {
 @Fork(2)
 abstract class Bench {
   import State._
-  @Param(Array("10", "100", "1000"))
+
+  @Param(Array("10", "100"))
+  var length: Int = _
+
+  @Param(Array("10", "100"))
   var depth: Int = _
 
-  protected def encode0(data: Data): String
+  protected def encode0(foo: Seq[Foo[Option]]): String
 
   @Benchmark
-  def encode(data: Data): String = encode0(data)
+  def encode(data: Data): String = encode0(data.get(length, depth))
 }
 
-class CirceBench extends Bench {
+class CirceAutoBench extends Bench {
   import io.circe.generic.auto._
   import io.circe.syntax._
   import State._
 
-  def encode0(data: Data): String = data.get(depth).asJson.noSpaces
+  def encode0(foo: Seq[Foo[Option]]): String = foo.asJson.noSpaces
+}
+
+class CirceBench extends Bench {
+  import io.circe.syntax._
+  import State._
+
+  implicit val encodeFoo: Encoder[Foo[Option]] = Encoder.instance {
+    case Foo(i, Some(f)) => Json.obj("i" -> Json.fromInt(i), "foo" -> f.asJson)
+    case Foo(i, _) => Json.obj("i" -> Json.fromInt(i), "foo" -> Json.Null)
+  }
+
+  def encode0(foo: Seq[Foo[Option]]): String = foo.asJson.noSpaces
 }
 
 class SprayJsonBench extends Bench {
   import spray.json._
+  import DefaultJsonProtocol._
   import State._
 
-  implicit object FooFormat extends JsonFormat[Foo[Option]] with AdditionalFormats with StandardFormats {
+  implicit object FooFormat extends JsonFormat[Foo[Option]] {
     def read(json: JsValue): Foo[Option] = ???
-    // Is not stack-safe?
-    def write(obj: Foo[Option]): JsValue = JsObject("i" -> obj.i.toJson, "foo" -> obj.foo.toJson)
+    def write(obj: Foo[Option]): JsValue =
+      JsObject("i" -> JsNumber(obj.i), "foo" -> obj.foo.toJson)
   }
 
-  def encode0(data: Data): String = data.get(depth).toJson.compactPrint
+  def encode0(foo: Seq[Foo[Option]]): String = foo.toJson.compactPrint
 }
 
 //class PlayJsonBench extends Bench {
