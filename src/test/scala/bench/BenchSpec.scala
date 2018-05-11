@@ -5,7 +5,7 @@ import org.scalatest._
 
 class BenchSpec extends FunSuite {
 
-  def benchTest(bench: Bench): Assertion =  {
+  def benchTest(bench: Bench): Assertion = {
     bench.length = 10
     bench.depth = 10
     val json = bench.encode(new Data)

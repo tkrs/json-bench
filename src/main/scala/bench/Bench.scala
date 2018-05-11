@@ -61,6 +61,7 @@ class SprayJsonBench extends Bench {
 
   def encode0(foo: Seq[Foo[Option]]): String = foo.toJson.compactPrint
 }
+
 class ArgonautBench extends Bench {
   import argonaut._, Argonaut._
   import State._
@@ -70,11 +71,22 @@ class ArgonautBench extends Bench {
     case Foo(i, _) => Json("i" -> Json.jNumber(i), "foo" -> Json.jNull)
   }
 
-//  implicit def codecFoo: CodecJson[Foo[Option]] =
-//    casecodec2(Foo.apply[Option], Foo.unapply[Option])("i", "foo")
-
   def encode0(foos: Seq[Foo[Option]]): String = foos.toList.asJson.nospaces
 }
+
+// FIXME: NPE occurred...
+//class PlayJsonBench extends Bench {
+//  import play.api.libs.json._
+//  import play.api.libs.functional.syntax._
+//  import State._
+//
+//  implicit val encodeFoo: Writes[Foo[Option]] = (
+//    (JsPath \ "i").write[Int] and
+//    (JsPath \ "foo").writeNullable[Foo[Option]]
+//  )(unlift[Foo[Option], (Int, Option[Foo[Option]])](a => Foo.unapply[Option](a)))
+//
+//  def encode0(foos: Seq[Foo[Option]]): String = Json.stringify(Json.toJson(foos))
+//}
 
 object State {
 

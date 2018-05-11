@@ -14,6 +14,28 @@ libraryDependencies ++= Seq(
   circeParser,
   argonaut,
   scalaTest % Test
-)
+).map(_.withSources)
 
 enablePlugins(JmhPlugin)
+
+scalacOptions := Seq(
+  "-deprecation",
+  "-encoding", "UTF-8",
+  "-explaintypes",
+  "-unchecked",
+  "-feature",
+  "-language:existentials",
+  "-language:experimental.macros",
+  "-language:higherKinds",
+  "-language:implicitConversions",
+  "-language:postfixOps",
+  "-Xcheckinit",
+  "-Xfuture",
+  "-Xlint",
+  "-Yno-adapted-args",
+  "-Ypartial-unification",
+  "-Ydelambdafy:method",
+  "-opt-inline-from:**",
+  "-opt:l:inline",
+  "-opt-warnings"
+)
