@@ -4,22 +4,11 @@ import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
 
-// jmh:run -jvmArgsAppend "-Xss5m"
-
-@State(Scope.Thread)
-@BenchmarkMode(Array(Mode.Throughput))
-@Warmup(iterations = 10, time = 1)
-@Measurement(iterations = 10, time = 1)
-@OutputTimeUnit(TimeUnit.SECONDS)
-@Fork(2)
-abstract class Bench {
+trait Bench {
   import State._
 
-  @Param(Array("10", "100"))
-  var length: Int = _
-
-  @Param(Array("10", "100"))
-  var depth: Int = _
+  def length: Int
+  def depth: Int
 
   protected def encode0(foo: Seq[Foo[Option]]): String
 
@@ -27,7 +16,51 @@ abstract class Bench {
   def encode(data: Data): String = encode0(data.get(length, depth))
 }
 
-class CirceAutoBench extends Bench {
+trait PermBench extends Bench {
+
+  @Param(Array("10", "100"))
+  var length: Int = _
+
+  @Param(Array("10", "100"))
+  var depth: Int = _
+}
+
+trait DeepBench extends Bench {
+
+  val length: Int = 1
+
+  val depth: Int = 1000
+}
+
+object State {
+
+  case class Foo[F[_]](i: Int, foo: F[Foo[F]])
+
+  private def genFoo(i: Int, foo: Foo[Option]): Foo[Option] = {
+    if (i == 0) foo
+    else genFoo(i - 1, Foo(i, Some(foo)))
+  }
+
+  @State(Scope.Benchmark)
+  class Data {
+    val foo1_1000: Seq[Foo[Option]] = List(genFoo(999, Foo(1000, Option.empty[Foo[Option]])))
+    val foo10_10: Seq[Foo[Option]] = Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(10).toList
+    val foo100_10: Seq[Foo[Option]] = Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(10).toList
+    val foo10_100: Seq[Foo[Option]] = Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(100).toList
+    val foo100_100: Seq[Foo[Option]] = Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(100).toList
+
+    @inline final def get(length: Int, depth: Int): Seq[Foo[Option]] = (length, depth) match {
+      case (1, 1000) => foo1_1000
+      case (10, 10) => foo10_10
+      case (100, 10) => foo100_10
+      case (10, 100) => foo10_100
+      case (100, 100) => foo100_100
+      case (_, _) => ???
+    }
+  }
+}
+
+trait CirceAutoBench { self: Bench =>
   import io.circe.generic.auto._
   import io.circe.syntax._
   import State._
@@ -35,7 +68,7 @@ class CirceAutoBench extends Bench {
   def encode0(foo: Seq[Foo[Option]]): String = foo.asJson.noSpaces
 }
 
-class CirceBench extends Bench {
+trait CirceBench { self: Bench =>
   import io.circe.{Encoder, Json}
   import io.circe.syntax._
   import State._
@@ -48,7 +81,7 @@ class CirceBench extends Bench {
   def encode0(foo: Seq[Foo[Option]]): String = foo.asJson.noSpaces
 }
 
-class SprayJsonBench extends Bench {
+trait SprayJsonBench { self: Bench =>
   import spray.json._
   import DefaultJsonProtocol._
   import State._
@@ -62,7 +95,7 @@ class SprayJsonBench extends Bench {
   def encode0(foo: Seq[Foo[Option]]): String = foo.toJson.compactPrint
 }
 
-class ArgonautBench extends Bench {
+trait ArgonautBench { self: Bench =>
   import argonaut._, Argonaut._
   import State._
 
@@ -75,41 +108,38 @@ class ArgonautBench extends Bench {
 }
 
 // FIXME: NPE occurred...
-//class PlayJsonBench extends Bench {
-//  import play.api.libs.json._
-//  import play.api.libs.functional.syntax._
-//  import State._
-//
-//  implicit val encodeFoo: Writes[Foo[Option]] = (
-//    (JsPath \ "i").write[Int] and
-//    (JsPath \ "foo").writeNullable[Foo[Option]]
-//  )(unlift[Foo[Option], (Int, Option[Foo[Option]])](a => Foo.unapply[Option](a)))
-//
-//  def encode0(foos: Seq[Foo[Option]]): String = Json.stringify(Json.toJson(foos))
-//}
+abstract class PlayJsonBench { self: Bench =>
+  import play.api.libs.json._
+  import play.api.libs.functional.syntax._
+  import State._
 
-object State {
+  implicit val encodeFoo: Writes[Foo[Option]] = (
+    (JsPath \ "i").write[Int] and
+    (JsPath \ "foo").writeNullable[Foo[Option]]
+  )(unlift[Foo[Option], (Int, Option[Foo[Option]])](a => Foo.unapply[Option](a)))
 
-  case class Foo[F[_]](i: Int, foo: F[Foo[F]])
-
-  private def genFoo(i: Int, foo: Foo[Option]): Foo[Option] = {
-    if (i == 0) foo
-    else genFoo(i - 1, Foo(i, Some(foo)))
-  }
-
-  @State(Scope.Thread)
-  class Data {
-    val foo10_10: Seq[Foo[Option]] = Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(10).toList
-    val foo100_10: Seq[Foo[Option]] = Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(10).toList
-    val foo10_100: Seq[Foo[Option]] = Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(100).toList
-    val foo100_100: Seq[Foo[Option]] = Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(100).toList
-
-    @inline def get(i: Int, j: Int): Seq[Foo[Option]] = (i, j) match {
-      case (10, 10) => foo10_10
-      case (100, 10) => foo100_10
-      case (10, 100) => foo10_100
-      case (100, 100) => foo100_100
-      case (_, _) => ???
-    }
-  }
+  def encode0(foos: Seq[Foo[Option]]): String = Json.stringify(Json.toJson(foos))
 }
+
+@State(Scope.Thread)
+@BenchmarkMode(Array(Mode.Throughput))
+@Warmup(iterations = 5, time = 1)
+@Measurement(iterations = 10, time = 2)
+@OutputTimeUnit(TimeUnit.SECONDS)
+@Fork(2)
+abstract class Attr
+
+class CirceAutoPermBench extends Attr with CirceAutoBench with PermBench
+class CirceAutoDeepBench extends Attr with CirceAutoBench with DeepBench
+
+class CircePermBench extends Attr with CirceBench with PermBench
+class CirceDeepBench extends Attr with CirceBench with DeepBench
+
+class SprayJsonPerfmBench extends Attr with SprayJsonBench with PermBench
+class SprayJsonDeepBench extends Attr with SprayJsonBench with DeepBench
+
+class ArgonautPermBench extends Attr with SprayJsonBench with PermBench
+class ArgonautDeepBench extends Attr with SprayJsonBench with DeepBench
+
+// class PlayJsonPermBench extends PlayJsonBench with PermBench
+// class PlayJsonDeepBench extends PlayJsonBench with DeepBench
