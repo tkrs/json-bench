@@ -12,6 +12,7 @@ libraryDependencies ++= Seq(
   circeCore,
   circeGeneric,
   circeParser,
+  circeJackson29,
   argonaut,
   jacksonScala,
   uPickle,

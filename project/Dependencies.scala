@@ -21,5 +21,7 @@ object Dependencies {
   lazy val circeGeneric = "io.circe" %% "circe-generic" % circeVersion
   lazy val circeParser = "io.circe" %% "circe-parser" % circeVersion
 
+  lazy val circeJackson29 = "io.circe" %% "circe-jackson29" % "0.9.0"
+
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "3.0.5"
 }
