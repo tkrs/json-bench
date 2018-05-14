@@ -62,6 +62,9 @@ class CirceJacksonDeepBenchB extends CirceJacksonBenchB with DeepBench
 class Json4sNativePermBenchS extends Json4sNativeBenchS with PermBench
 class Json4sNativeDeepBenchS extends Json4sNativeBenchS with DeepBench
 
+class Json4sJacksonPermBenchS extends Json4sJacksonBenchS with PermBench
+class Json4sJacksonDeepBenchS extends Json4sJacksonBenchS with DeepBench
+
 class JacksonScalaPermBenchS extends JacksonScalaBenchS with PermBench
 class JacksonScalaDeepBenchS extends JacksonScalaBenchS with DeepBench
 class JacksonScalaPermBenchB extends JacksonScalaBenchB with PermBench
@@ -179,6 +182,12 @@ abstract class Json4sNativeBenchS extends Bench[String] with Json4sNativeBench {
   final def encode0(foos: Seq[Foo[Option]]): String = write(foos)
 }
 
+abstract class Json4sJacksonBenchS extends Bench[String] with Json4sNativeBench { self: Params =>
+  import org.json4s._
+  import jackson.Serialization._
+
+  final def encode0(foos: Seq[Foo[Option]]): String = write(foos)
+}
 
 // FIXME: NPE occurred...
 trait PlayJsonBench {

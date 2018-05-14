@@ -14,7 +14,7 @@ object Dependencies {
 
   lazy val json4sVersion = "3.5.3"
   lazy val json4sNative = "org.json4s" %% "json4s-native" % json4sVersion
-  lazy val json4sScalaz = "org.json4s" %% "json4s-scalaz" % json4sVersion
+  lazy val json4sJackson = "org.json4s" %% "json4s-jackson" % json4sVersion
 
   lazy val circeVersion = "0.9.3"
   lazy val circeCore = "io.circe" %% "circe-core" % circeVersion

@@ -9,6 +9,7 @@ libraryDependencies ++= Seq(
   playJson,
   sprayJson,
   json4sNative,
+  json4sJackson,
   circeCore,
   circeGeneric,
   circeParser,
