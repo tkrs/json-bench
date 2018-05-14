@@ -80,6 +80,8 @@ class SprayJsonDeepBenchS extends SprayJsonBenchS with DeepBench
 
 class UPicklePermBenchS extends UPickleBenchS with PermBench
 class UPickleDeepBenchS extends UPickleBenchS with DeepBench
+class UPickleASTPermBenchS extends UPickleASTBenchS with PermBench
+class UPickleASTDeepBenchS extends UPickleASTBenchS with DeepBench
 
 trait ArgonautBench {
   import argonaut._, Argonaut._
@@ -240,6 +242,12 @@ abstract class UPickleBenchS extends Bench[String] with UPickleBench { self: Par
   import upickle.default._
 
   final def encode0(foos: Seq[Foo[Option]]): String = write(foos)
+}
+
+abstract class UPickleASTBenchS extends Bench[String] with UPickleBench { self: Params =>
+  import upickle.default._
+
+  final def encode0(foos: Seq[Foo[Option]]): String = writeJs(foos).render()
 }
 
 object State {
