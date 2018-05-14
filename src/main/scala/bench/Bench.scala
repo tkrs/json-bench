@@ -115,7 +115,17 @@ trait UPickleBench { self: Bench =>
 
   implicit val fooWriter: Writer[Foo[Option]] = macroW
 
-  def encode0(foos: Seq[Foo[Option]]): String = upickle.default.write(foos)
+  def encode0(foos: Seq[Foo[Option]]): String = write(foos)
+}
+
+trait Json4sNativeBench { self: Bench =>
+  import org.json4s._
+  import native.Serialization._
+  import State._
+
+  implicit val noTypeHintsFormats: Formats = formats(NoTypeHints)
+
+  def encode0(foos: Seq[Foo[Option]]): String = write(foos)
 }
 
 // FIXME: NPE occurred...
@@ -154,6 +164,9 @@ class ArgonautDeepBench extends Attr with ArgonautBench with DeepBench
 
 class UPicklePermBench extends Attr with UPickleBench with PermBench
 class UPickleDeepBench extends Attr with UPickleBench with DeepBench
+
+class Json4sNativePermBench extends Attr with Json4sNativeBench with PermBench
+class Json4sNativeDeepBench extends Attr with Json4sNativeBench with DeepBench
 
 // class PlayJsonPermBench extends PlayJsonBench with PermBench
 // class PlayJsonDeepBench extends PlayJsonBench with DeepBench

@@ -33,5 +33,7 @@ class BenchSpec extends FunSuite {
   test("SprayJsonBench")(benchTest(new SprayJsonBench with T {}))
   // TODO: Unexpected JSON was created
   test("UPickleBench")(benchTest(new UPickleBench with T {}))
+  // TODO: Unexpected JSON was created
+  test("Json4sNativeBench")(benchTest(new Json4sNativeBench with T {}))
   // test("PlayJsonBench")(benchTest(new PlayJsonBench with T {}))
 }
