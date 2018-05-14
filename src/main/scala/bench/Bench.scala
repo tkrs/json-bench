@@ -49,8 +49,8 @@ class ArgonautDeepBenchS extends ArgonautBenchS with DeepBench
 
 class CirceAutoPermBenchS extends CirceAutoBenchS with PermBench
 class CirceAutoDeepBenchS extends CirceAutoBenchS with DeepBench
-class CirceJacksonAutoPermBenchS extends CirceAutoBenchS with PermBench
-class CirceJacksonAutoDeepBenchS extends CirceAutoBenchS with DeepBench
+class CirceJacksonAutoPermBenchS extends CirceJacksonAutoBenchS with PermBench
+class CirceJacksonAutoDeepBenchS extends CirceJacksonAutoBenchS with DeepBench
 class CirceJacksonAutoPermBenchB extends CirceJacksonAutoBenchB with PermBench
 class CirceJacksonAutoDeepBenchB extends CirceJacksonAutoBenchB with DeepBench
 
