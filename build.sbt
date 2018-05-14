@@ -14,7 +14,7 @@ libraryDependencies ++= Seq(
   circeParser,
   argonaut,
   jacksonScala,
-  upickle,
+  uPickle,
   uJson,
   scalaTest % Test
 ).map(_.withSources)

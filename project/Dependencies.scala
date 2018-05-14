@@ -9,11 +9,12 @@ object Dependencies {
 
   lazy val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.5"
 
-  lazy val upickle = "com.lihaoyi" %% "upickle" % "0.6.5"
+  lazy val uPickle = "com.lihaoyi" %% "upickle" % "0.6.5"
   lazy val uJson = "com.lihaoyi" %% "ujson" % "0.6.5"
 
-  lazy val json4sNative = "org.json4s" %% "json4s-native" % "3.5.3"
-  lazy val json4sScalaz = "org.json4s" %% "json4s-scalaz" % "3.5.3"
+  lazy val json4sVersion = "3.5.3"
+  lazy val json4sNative = "org.json4s" %% "json4s-native" % json4sVersion
+  lazy val json4sScalaz = "org.json4s" %% "json4s-scalaz" % json4sVersion
 
   lazy val circeVersion = "0.9.3"
   lazy val circeCore = "io.circe" %% "circe-core" % circeVersion
