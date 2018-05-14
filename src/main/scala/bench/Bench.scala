@@ -27,9 +27,11 @@ trait PermBench extends Bench {
 
 trait DeepBench extends Bench {
 
-  val length: Int = 1
+  @Param(Array("1"))
+  var length: Int = _
 
-  val depth: Int = 1000
+  @Param(Array("1000"))
+  var depth: Int = _
 }
 
 object State {
@@ -107,6 +109,15 @@ trait ArgonautBench { self: Bench =>
   def encode0(foos: Seq[Foo[Option]]): String = foos.toList.asJson.nospaces
 }
 
+trait UPickleBench { self: Bench =>
+  import upickle.default._
+  import State._
+
+  implicit val fooWriter: Writer[Foo[Option]] = macroW
+
+  def encode0(foos: Seq[Foo[Option]]): String = upickle.default.write(foos)
+}
+
 // FIXME: NPE occurred...
 abstract class PlayJsonBench { self: Bench =>
   import play.api.libs.json._
@@ -138,8 +149,11 @@ class CirceDeepBench extends Attr with CirceBench with DeepBench
 class SprayJsonPerfmBench extends Attr with SprayJsonBench with PermBench
 class SprayJsonDeepBench extends Attr with SprayJsonBench with DeepBench
 
-class ArgonautPermBench extends Attr with SprayJsonBench with PermBench
-class ArgonautDeepBench extends Attr with SprayJsonBench with DeepBench
+class ArgonautPermBench extends Attr with ArgonautBench with PermBench
+class ArgonautDeepBench extends Attr with ArgonautBench with DeepBench
+
+class UPicklePermBench extends Attr with UPickleBench with PermBench
+class UPickleDeepBench extends Attr with UPickleBench with DeepBench
 
 // class PlayJsonPermBench extends PlayJsonBench with PermBench
 // class PlayJsonDeepBench extends PlayJsonBench with DeepBench
