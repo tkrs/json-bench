@@ -4,8 +4,8 @@ import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
-
 import State._
+import io.circe.{Decoder, DecodingFailure}
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
@@ -71,9 +71,25 @@ class Case5 extends Bench with Params {
 trait ArgonautBench { self: Params =>
   import argonaut._, Argonaut._
 
+  implicit val decodeFooForArgonaut: DecodeJson[Foo[Option]] = DecodeJson[Foo[Option]] { hc =>
+    val x = for {
+      i   <- hc.downField("i").focus.flatMap(_.number.flatMap(_.toInt))
+      foo <- hc.downField("foo").focus.flatMap(_.as[Option[Foo[Option]]].toOption)
+    } yield Foo(i, foo)
+    x match {
+      case Some(f) => DecodeResult.ok(f)
+      case None    => DecodeResult.fail[Foo[Option]]("Foo[Option]", hc.history)
+    }
+  }
+
   implicit val encodeFooForArgonaut: EncodeJson[Foo[Option]] = EncodeJson[Foo[Option]] {
     case Foo(i, foo) => Json("i" -> Json.jNumber(i), "foo" -> foo.asJson)
   }
+
+  private[this] lazy val rawJson = foos.toList.asJson.nospaces
+
+  @Benchmark
+  def decodeArgonaut: Seq[Foo[Option]] = rawJson.decode[List[Foo[Option]]].toOption.get
 
   @Benchmark
   def encodeArgonaut: String = foos.toList.asJson.nospaces
@@ -81,8 +97,14 @@ trait ArgonautBench { self: Params =>
 
 trait CirceAutoBench { self: Params =>
   import io.circe.generic.auto._
+  import io.circe.parser.{decode => cdecode}
   import io.circe.syntax._
   import io.circe.jackson._
+
+  private[this] lazy val rawJson = foos.asJson.noSpaces
+
+  @Benchmark
+  def decodeCirceAuto: Foo[Option] = cdecode[Foo[Option]](rawJson).toTry.get
 
   @Benchmark
   def encodeCirceAuto: String = foos.asJson.noSpaces
@@ -96,12 +118,29 @@ trait CirceAutoBench { self: Params =>
 
 trait CirceManualBench { self: Params =>
   import io.circe.{Encoder, Json}
+  import io.circe.parser.{decode => cdecode}
   import io.circe.syntax._
   import io.circe.jackson._
+
+  implicit val decodeFooCirce: Decoder[Foo[Option]] = Decoder.instance { hc =>
+    val x = for {
+      i   <- hc.downField("i").focus.flatMap(_.asNumber.flatMap(_.toInt))
+      foo <- hc.downField("foo").focus.flatMap(_.as[Option[Foo[Option]]].toOption)
+    } yield Foo(i, foo)
+    x match {
+      case Some(f) => Right(f)
+      case None    => Left(DecodingFailure("Foo[Option]", List.empty))
+    }
+  }
 
   implicit val encodeFooCirce: Encoder[Foo[Option]] = Encoder.instance {
     case Foo(i, foo) => Json.obj("i" := Json.fromInt(i), "foo" := foo.asJson)
   }
+
+  private[this] lazy val rawJson = foos.asJson.noSpaces
+
+  @Benchmark
+  def decodeCirceManual: Seq[Foo[Option]] = cdecode[Seq[Foo[Option]]](rawJson).toTry.get
 
   @Benchmark
   def encodeCirceManual: String = foos.asJson.noSpaces
@@ -121,6 +160,11 @@ trait JacksonScalaBench { self: Params =>
   val mapper = new ObjectMapper() with ScalaObjectMapper
   mapper.registerModule(DefaultScalaModule)
 
+  private[this] lazy val rawJson = mapper.writeValueAsString(foos)
+
+  @Benchmark
+  def decodeJackson: Seq[Foo[Option]] = mapper.readValue(rawJson, classOf[Seq[Foo[Option]]])
+
   @Benchmark
   def encodeJackson: String = mapper.writeValueAsString(foos)
 
@@ -130,10 +174,18 @@ trait JacksonScalaBench { self: Params =>
 
 trait Json4sBench { self: Params =>
   import org.json4s._
-  import native.Serialization.{write => nwrite, formats}
-  import jackson.Serialization.{write => swrite}
+  import native.Serialization.{formats, write => nwrite, read => nread}
+  import jackson.Serialization.{write => swrite, read => sread}
 
   implicit val noTypeHintsFormats: Formats = formats(NoTypeHints)
+
+  private[this] lazy val rawJson = nwrite(foos)
+
+  @Benchmark
+  def decodeJson4sNative: Seq[Foo[Option]] = nread(rawJson)
+
+  @Benchmark
+  def decodeJson4sJackson: Seq[Foo[Option]] = sread(rawJson)
 
   @Benchmark
   def encodeJson4sNative: String = nwrite(foos)
@@ -165,9 +217,20 @@ trait SprayJsonBench { self: Params =>
   import DefaultJsonProtocol._
 
   implicit object FooFormat extends JsonFormat[Foo[Option]] {
-    def read(json: JsValue): Foo[Option] = ???
+    def read(json: JsValue): Foo[Option] = json match {
+      case JsObject(m) =>
+        val i   = m.get("i").map(_.convertTo[Int]).getOrElse(0)
+        val foo = m.get("foo").map(_.convertTo[Foo[Option]])
+        Foo(i, foo)
+      case x => throw new Exception(x.toString())
+    }
     def write(obj: Foo[Option]): JsValue = JsObject("i" -> JsNumber(obj.i), "foo" -> obj.foo.toJson)
   }
+
+  private[this] lazy val rawJson = foos.toJson.compactPrint
+
+  @Benchmark
+  final def decodeSprayJson: Seq[Foo[Option]] = rawJson.parseJson.convertTo[Seq[Foo[Option]]]
 
   @Benchmark
   final def encodeSprayJson: String = foos.toJson.compactPrint
@@ -176,7 +239,12 @@ trait SprayJsonBench { self: Params =>
 trait UPickleBench { self: Params =>
   import upickle.default._
 
-  implicit val fooWriter: Writer[Foo[Option]] = macroW
+  implicit val fooUPickleRW: ReadWriter[Foo[Option]] = macroRW
+
+  private[this] lazy val rawJson = write(foos)
+
+  @Benchmark
+  def decodeUPickle: Seq[Foo[Option]] = read[Seq[Foo[Option]]](rawJson)
 
   @Benchmark
   def encodeUPickle: String = write(foos)
