@@ -72,8 +72,7 @@ trait ArgonautBench { self: Params =>
   import argonaut._, Argonaut._
 
   implicit val encodeFooForArgonaut: EncodeJson[Foo[Option]] = EncodeJson[Foo[Option]] {
-    case Foo(i, Some(foo)) => Json("i" -> Json.jNumber(i), "foo" -> foo.asJson)
-    case Foo(i, _)         => Json("i" -> Json.jNumber(i), "foo" -> Json.jNull)
+    case Foo(i, foo) => Json("i" -> Json.jNumber(i), "foo" -> foo.asJson)
   }
 
   @Benchmark
@@ -92,7 +91,7 @@ trait CirceAutoBench { self: Params =>
   def encodeCirceAutoJackson: String = jacksonPrint(foos.asJson)
 
   @Benchmark
-  final def encodeCirceAutoJacksonB: ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
+  def encodeCirceAutoJacksonB: ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
 }
 
 trait CirceManualBench { self: Params =>
@@ -101,8 +100,7 @@ trait CirceManualBench { self: Params =>
   import io.circe.jackson._
 
   implicit val encodeFooCirce: Encoder[Foo[Option]] = Encoder.instance {
-    case Foo(i, Some(f)) => Json.obj("i" := Json.fromInt(i), "foo" := f.asJson)
-    case Foo(i, _)       => Json.obj("i" := Json.fromInt(i), "foo" := Json.Null)
+    case Foo(i, foo) => Json.obj("i" := Json.fromInt(i), "foo" := foo.asJson)
   }
 
   @Benchmark
@@ -127,8 +125,7 @@ trait JacksonScalaBench { self: Params =>
   def encodeJackson: String = mapper.writeValueAsString(foos)
 
   @Benchmark
-  def encodeJacksonB: ByteBuffer =
-    ByteBuffer.wrap(mapper.writeValueAsBytes(foos))
+  def encodeJacksonB: ByteBuffer = ByteBuffer.wrap(mapper.writeValueAsBytes(foos))
 }
 
 trait Json4sBench { self: Params =>
@@ -169,8 +166,7 @@ trait SprayJsonBench { self: Params =>
 
   implicit object FooFormat extends JsonFormat[Foo[Option]] {
     def read(json: JsValue): Foo[Option] = ???
-    def write(obj: Foo[Option]): JsValue =
-      JsObject("i" -> JsNumber(obj.i), "foo" -> obj.foo.toJson)
+    def write(obj: Foo[Option]): JsValue = JsObject("i" -> JsNumber(obj.i), "foo" -> obj.foo.toJson)
   }
 
   @Benchmark
