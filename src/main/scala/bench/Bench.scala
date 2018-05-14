@@ -74,7 +74,7 @@ trait CirceAutoBench { self: FooBench =>
   import io.circe.syntax._
   import State._
 
-  def encode0(foos: Seq[Foo[Option]]): String = foos.asJson.noSpaces
+  final def encode0(foos: Seq[Foo[Option]]): String = foos.asJson.noSpaces
 }
 
 trait CirceBench { self: FooBench =>
@@ -87,7 +87,7 @@ trait CirceBench { self: FooBench =>
     case Foo(i, _) => Json.obj("i" -> Json.fromInt(i), "foo" -> Json.Null)
   }
 
-  def encode0(foos: Seq[Foo[Option]]): String = foos.asJson.noSpaces
+  final def encode0(foos: Seq[Foo[Option]]): String = foos.asJson.noSpaces
 }
 
 trait SprayJsonBench { self: FooBench =>
@@ -101,7 +101,7 @@ trait SprayJsonBench { self: FooBench =>
       JsObject("i" -> JsNumber(obj.i), "foo" -> obj.foo.toJson)
   }
 
-  def encode0(foos: Seq[Foo[Option]]): String = foos.toJson.compactPrint
+  final def encode0(foos: Seq[Foo[Option]]): String = foos.toJson.compactPrint
 }
 
 trait ArgonautBench { self: FooBench =>
@@ -113,7 +113,7 @@ trait ArgonautBench { self: FooBench =>
     case Foo(i, _) => Json("i" -> Json.jNumber(i), "foo" -> Json.jNull)
   }
 
-  def encode0(foos: Seq[Foo[Option]]): String = foos.toList.asJson.nospaces
+  final def encode0(foos: Seq[Foo[Option]]): String = foos.toList.asJson.nospaces
 }
 
 trait UPickleBench { self: FooBench =>
@@ -122,7 +122,7 @@ trait UPickleBench { self: FooBench =>
 
   implicit val fooWriter: Writer[Foo[Option]] = macroW
 
-  def encode0(foos: Seq[Foo[Option]]): String = write(foos)
+  final def encode0(foos: Seq[Foo[Option]]): String = write(foos)
 }
 
 trait Json4sNativeBench { self: FooBench =>
@@ -132,7 +132,7 @@ trait Json4sNativeBench { self: FooBench =>
 
   implicit val noTypeHintsFormats: Formats = formats(NoTypeHints)
 
-  def encode0(foos: Seq[Foo[Option]]): String = write(foos)
+  final def encode0(foos: Seq[Foo[Option]]): String = write(foos)
 }
 
 trait JacksonScalaBench { self: FooBench =>
@@ -141,11 +141,11 @@ trait JacksonScalaBench { self: FooBench =>
   val mapper = new ObjectMapper() with ScalaObjectMapper
   mapper.registerModule(DefaultScalaModule)
 
-  def encode0(foos: Seq[Foo[Option]]): String = mapper.writeValueAsString(foos)
+  final def encode0(foos: Seq[Foo[Option]]): String = mapper.writeValueAsString(foos)
 }
 
 // FIXME: NPE occurred...
-abstract class PlayJsonBench { self: FooBench =>
+trait PlayJsonBench { self: FooBench =>
   import play.api.libs.json._
   import play.api.libs.functional.syntax._
   import State._
@@ -155,7 +155,7 @@ abstract class PlayJsonBench { self: FooBench =>
     (JsPath \ "foo").writeNullable[Foo[Option]]
   )(unlift[Foo[Option], (Int, Option[Foo[Option]])](a => Foo.unapply[Option](a)))
 
-  def encode0(foos: Seq[Foo[Option]]): String = Json.stringify(Json.toJson(foos))
+  final def encode0(foos: Seq[Foo[Option]]): String = Json.stringify(Json.toJson(foos))
 }
 
 object State {
