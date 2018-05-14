@@ -2,7 +2,7 @@ import Dependencies._
 
 name := "json-bench"
 organization := "com.github.tkrs"
-version      := "0.1.0-SNAPSHOT"
+version := "0.1.0-SNAPSHOT"
 scalaVersion := "2.12.6"
 
 libraryDependencies ++= Seq(
@@ -26,7 +26,8 @@ scalafmtOnCompile := true // all projects
 
 scalacOptions := Seq(
   "-deprecation",
-  "-encoding", "UTF-8",
+  "-encoding",
+  "UTF-8",
   "-explaintypes",
   "-unchecked",
   "-feature",

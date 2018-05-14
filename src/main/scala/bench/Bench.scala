@@ -7,7 +7,7 @@ import org.openjdk.jmh.annotations._
 
 import State._
 
-@State(Scope.Thread)
+@State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
 @Warmup(iterations = 5, time = 1)
 @Measurement(iterations = 10, time = 2)
@@ -15,10 +15,17 @@ import State._
 @Fork(2)
 abstract class Bench[T] { self: Params =>
 
+  var foos: Seq[Foo[Option]] = _
+
+  @Setup
+  def setup(data: Data): Unit = {
+    foos = data.get(length, depth)
+  }
+
   protected def encode0(foos: Seq[Foo[Option]]): T
 
   @Benchmark
-  def encode(data: Data): T = encode0(data.get(length, depth))
+  def encode: T = encode0(foos)
 }
 
 trait Params {
@@ -263,24 +270,11 @@ object State {
 
   @State(Scope.Benchmark)
   class Data {
-    val foo1_1000: Seq[Foo[Option]] =
-      List(genFoo(999, Foo(1000, Option.empty[Foo[Option]])))
-    val foo10_10: Seq[Foo[Option]] =
-      Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(10).toList
-    val foo100_10: Seq[Foo[Option]] =
-      Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(10).toList
-    val foo10_100: Seq[Foo[Option]] =
-      Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(100).toList
-    val foo100_100: Seq[Foo[Option]] =
-      Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(100).toList
 
-    @inline final def get(length: Int, depth: Int): Seq[Foo[Option]] = (length, depth) match {
-      case (1, 1000)  => foo1_1000
-      case (10, 10)   => foo10_10
-      case (100, 10)  => foo100_10
-      case (10, 100)  => foo10_100
-      case (100, 100) => foo100_100
-      case (_, _)     => ???
-    }
+    def get(length: Int, depth: Int): Seq[Foo[Option]] =
+      Iterator
+        .continually(genFoo(depth - 1, Foo(depth, Option.empty[Foo[Option]])))
+        .take(length)
+        .toList
   }
 }
