@@ -8,12 +8,7 @@ import org.openjdk.jmh.annotations._
 import State._
 
 @State(Scope.Benchmark)
-@BenchmarkMode(Array(Mode.Throughput))
-@Warmup(iterations = 10, time = 1)
-@Measurement(iterations = 10, time = 2)
-@OutputTimeUnit(TimeUnit.SECONDS)
-@Fork(2)
-abstract class Bench[T] { self: Params =>
+trait Bench { self: Params =>
 
   var foos: Seq[Foo[Option]] = _
 
@@ -21,11 +16,6 @@ abstract class Bench[T] { self: Params =>
   def setup(data: Data): Unit = {
     foos = data.get(length, depth)
   }
-
-  protected def encode0(foos: Seq[Foo[Option]]): T
-
-  @Benchmark
-  def encode: T = encode0(foos)
 }
 
 trait Params {
@@ -33,7 +23,7 @@ trait Params {
   def depth: Int
 }
 
-trait PermBench extends Params {
+trait PermBenchParams extends Params {
 
   @Param(Array("10", "100"))
   var length: Int = _
@@ -42,7 +32,7 @@ trait PermBench extends Params {
   var depth: Int = _
 }
 
-trait DeepBench extends Params {
+trait DeepBenchParams extends Params {
 
   @Param(Array("1"))
   var length: Int = _
@@ -51,178 +41,122 @@ trait DeepBench extends Params {
   var depth: Int = _
 }
 
-class ArgonautPermBenchS extends ArgonautBenchS with PermBench
-class ArgonautDeepBenchS extends ArgonautBenchS with DeepBench
+@State(Scope.Benchmark)
+@BenchmarkMode(Array(Mode.Throughput))
+@Warmup(iterations = 10, time = 1)
+@Measurement(iterations = 10, time = 2)
+@OutputTimeUnit(TimeUnit.SECONDS)
+@Fork(2)
+abstract class AllBench
+    extends ArgonautBench
+    with CirceAutoBench
+    with CirceManualBench
+    with JacksonScalaBench
+    with Json4sBench
+    // with PlayJsonBench
+    with SprayJsonBench
+    with UPickleBench { self: Params =>
+}
 
-class CirceAutoPermBenchS        extends CirceAutoBenchS with PermBench
-class CirceAutoDeepBenchS        extends CirceAutoBenchS with DeepBench
-class CirceAutoJacksonPermBenchS extends CirceAutoJacksonBenchS with PermBench
-class CirceAutoJacksonDeepBenchS extends CirceAutoJacksonBenchS with DeepBench
-class CirceAutoJacksonPermBenchB extends CirceAutoJacksonBenchB with PermBench
-class CirceAutoJacksonDeepBenchB extends CirceAutoJacksonBenchB with DeepBench
+class PermBench extends AllBench with PermBenchParams
+class DeepBench extends AllBench with DeepBenchParams
 
-class CirceCorePermBenchS        extends CirceCoreBenchS with PermBench
-class CirceCoreDeepBenchS        extends CirceCoreBenchS with DeepBench
-class CirceCoreJacksonPermBenchB extends CirceCoreJacksonBenchB with PermBench
-class CirceCoreJacksonDeepBenchB extends CirceCoreJacksonBenchB with DeepBench
-
-class Json4sNativePermBenchS  extends Json4sNativeBenchS with PermBench
-class Json4sNativeDeepBenchS  extends Json4sNativeBenchS with DeepBench
-class Json4sJacksonPermBenchS extends Json4sJacksonBenchS with PermBench
-class Json4sJacksonDeepBenchS extends Json4sJacksonBenchS with DeepBench
-
-class JacksonScalaPermBenchS extends JacksonScalaBenchS with PermBench
-class JacksonScalaDeepBenchS extends JacksonScalaBenchS with DeepBench
-class JacksonScalaPermBenchB extends JacksonScalaBenchB with PermBench
-class JacksonScalaDeepBenchB extends JacksonScalaBenchB with DeepBench
-
-// class PlayJsonPermBenchS extends PlayJsonBenchS with PermBench
-// class PlayJsonDeepBenchS extends PlayJsonBenchS with DeepBench
-// class PlayJsonPermBenchB extends PlayJsonBenchB with PermBench
-// class PlayJsonDeepBenchB extends PlayJsonBenchB with DeepBench
-
-class SprayJsonPermBenchS extends SprayJsonBenchS with PermBench
-class SprayJsonDeepBenchS extends SprayJsonBenchS with DeepBench
-
-class UPicklePermBenchS    extends UPickleBenchS with PermBench
-class UPickleDeepBenchS    extends UPickleBenchS with DeepBench
-class UPickleASTPermBenchS extends UPickleASTBenchS with PermBench
-class UPickleASTDeepBenchS extends UPickleASTBenchS with DeepBench
-
-trait ArgonautBench {
+trait ArgonautBench extends Bench { self: Params =>
   import argonaut._, Argonaut._
 
-  implicit val encodeFoo: EncodeJson[Foo[Option]] = EncodeJson[Foo[Option]] {
+  implicit val encodeFooForArgonaut: EncodeJson[Foo[Option]] = EncodeJson[Foo[Option]] {
     case Foo(i, Some(foo)) => Json("i" -> Json.jNumber(i), "foo" -> foo.asJson)
     case Foo(i, _)         => Json("i" -> Json.jNumber(i), "foo" -> Json.jNull)
   }
+
+  @Benchmark
+  def encodeArgonaut: String = foos.toList.asJson.nospaces
 }
 
-abstract class ArgonautBenchS extends Bench[String] with ArgonautBench { self: Params =>
-  import argonaut._, Argonaut._
-
-  final def encode0(foos: Seq[Foo[Option]]): String = foos.toList.asJson.nospaces
-}
-
-abstract class CirceAutoBenchS extends Bench[String] { self: Params =>
+trait CirceAutoBench extends Bench { self: Params =>
   import io.circe.generic.auto._
   import io.circe.syntax._
+  import io.circe.jackson._
 
-  final def encode0(foos: Seq[Foo[Option]]): String = foos.asJson.noSpaces
+  @Benchmark
+  def encodeCirceAuto: String = foos.asJson.noSpaces
+
+  @Benchmark
+  def encodeCirceAutoJackson: String = jacksonPrint(foos.asJson)
+
+  @Benchmark
+  final def encodeCirceAutoJacksonB: ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
 }
 
-abstract class CirceAutoJacksonBenchS extends Bench[String] { self: Params =>
-  import io.circe.generic.auto._
-  import io.circe.syntax._
-  import io.circe.jackson.jacksonPrint
-
-  final def encode0(foos: Seq[Foo[Option]]): String = jacksonPrint(foos.asJson)
-}
-
-abstract class CirceAutoJacksonBenchB extends Bench[ByteBuffer] { self: Params =>
-  import io.circe.generic.auto._
-  import io.circe.syntax._
-  import io.circe.jackson.jacksonPrintByteBuffer
-
-  final def encode0(foos: Seq[Foo[Option]]): ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
-}
-
-trait CirceBench {
+trait CirceManualBench extends Bench { self: Params =>
   import io.circe.{Encoder, Json}
   import io.circe.syntax._
+  import io.circe.jackson._
 
-  implicit val encodeFoo: Encoder[Foo[Option]] = Encoder.instance {
+  implicit val encodeFooCirce: Encoder[Foo[Option]] = Encoder.instance {
     case Foo(i, Some(f)) => Json.obj("i" := Json.fromInt(i), "foo" := f.asJson)
     case Foo(i, _)       => Json.obj("i" := Json.fromInt(i), "foo" := Json.Null)
   }
+
+  @Benchmark
+  def encodeCirceManual: String = foos.asJson.noSpaces
+
+  @Benchmark
+  def encodeCirceManualJackson: String = jacksonPrint(foos.asJson)
+
+  @Benchmark
+  def encodeCirceManualJacksonB: ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
 }
 
-abstract class CirceCoreBenchS extends Bench[String] with CirceBench { self: Params =>
-  import io.circe.syntax._
-
-  final def encode0(foos: Seq[Foo[Option]]): String = foos.asJson.noSpaces
-}
-
-abstract class CirceJacksonBenchS extends Bench[String] with CirceBench { self: Params =>
-  import io.circe.syntax._
-  import io.circe.jackson.jacksonPrint
-
-  final def encode0(foos: Seq[Foo[Option]]): String = jacksonPrint(foos.asJson)
-}
-
-abstract class CirceCoreJacksonBenchB extends Bench[ByteBuffer] with CirceBench { self: Params =>
-  import io.circe.syntax._
-  import io.circe.jackson.jacksonPrintByteBuffer
-
-  final def encode0(foos: Seq[Foo[Option]]): ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
-}
-
-trait JacksonScalaBench {
+trait JacksonScalaBench extends Bench { self: Params =>
   import com.fasterxml.jackson.databind.ObjectMapper
   import com.fasterxml.jackson.module.scala.DefaultScalaModule
   import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 
   val mapper = new ObjectMapper() with ScalaObjectMapper
   mapper.registerModule(DefaultScalaModule)
-}
 
-abstract class JacksonScalaBenchS extends Bench[String] with JacksonScalaBench { self: Params =>
+  @Benchmark
+  def encodeJackson: String = mapper.writeValueAsString(foos)
 
-  final def encode0(foos: Seq[Foo[Option]]): String = mapper.writeValueAsString(foos)
-}
-
-abstract class JacksonScalaBenchB extends Bench[ByteBuffer] with JacksonScalaBench { self: Params =>
-
-  final def encode0(foos: Seq[Foo[Option]]): ByteBuffer =
+  @Benchmark
+  def encodeJacksonB: ByteBuffer =
     ByteBuffer.wrap(mapper.writeValueAsBytes(foos))
 }
 
-trait Json4sNativeBench {
+trait Json4sBench extends Bench { self: Params =>
   import org.json4s._
-  import native.Serialization._
+  import native.Serialization.{write => nwrite, formats}
+  import jackson.Serialization.{write => swrite}
 
   implicit val noTypeHintsFormats: Formats = formats(NoTypeHints)
-}
 
-abstract class Json4sNativeBenchS extends Bench[String] with Json4sNativeBench { self: Params =>
-  import org.json4s._
-  import native.Serialization._
+  @Benchmark
+  def encodeJson4sNative: String = nwrite(foos)
 
-  final def encode0(foos: Seq[Foo[Option]]): String = write(foos)
-}
-
-abstract class Json4sJacksonBenchS extends Bench[String] with Json4sNativeBench { self: Params =>
-  import org.json4s._
-  import jackson.Serialization._
-
-  final def encode0(foos: Seq[Foo[Option]]): String = write(foos)
+  @Benchmark
+  def encodeJson4sJackson: String = swrite(foos)
 }
 
 // FIXME: NPE occurred...
-trait PlayJsonBench {
+trait PlayJsonBench extends Bench { self: Params =>
   import play.api.libs.json._
   import play.api.libs.functional.syntax._
 
-  implicit val encodeFoo: Writes[Foo[Option]] = (
+  implicit val encodeFooPlayJson: Writes[Foo[Option]] = (
     (JsPath \ "i").write[Int] and
       (JsPath \ "foo").writeNullable[Foo[Option]]
   )(unlift(Foo.unapply[Option]))
-}
 
-abstract class PlayJsonBenchS extends Bench[String] with PlayJsonBench { self: Params =>
-  import play.api.libs.json._
+  // @Benchmark
+  def encodePlayJson: String = Json.stringify(Json.toJson(foos))
 
-  final def encode0(foos: Seq[Foo[Option]]): String = Json.stringify(Json.toJson(foos))
-}
-
-abstract class PlayJsonBenchB extends Bench[ByteBuffer] with PlayJsonBench { self: Params =>
-  import play.api.libs.json._
-
-  final def encode0(foos: Seq[Foo[Option]]): ByteBuffer =
+  // @Benchmark
+  def encodePlayJsonB: ByteBuffer =
     ByteBuffer.wrap(Json.toBytes(Json.toJson(foos)))
 }
 
-trait SprayJsonBench {
+trait SprayJsonBench extends Bench { self: Params =>
   import spray.json._
   import DefaultJsonProtocol._
 
@@ -231,31 +165,21 @@ trait SprayJsonBench {
     def write(obj: Foo[Option]): JsValue =
       JsObject("i" -> JsNumber(obj.i), "foo" -> obj.foo.toJson)
   }
+
+  @Benchmark
+  final def encodeSprayJson: String = foos.toJson.compactPrint
 }
 
-abstract class SprayJsonBenchS extends Bench[String] with SprayJsonBench { self: Params =>
-  import spray.json._
-  import DefaultJsonProtocol._
-
-  final def encode0(foos: Seq[Foo[Option]]): String = foos.toJson.compactPrint
-}
-
-trait UPickleBench {
+trait UPickleBench extends Bench { self: Params =>
   import upickle.default._
 
   implicit val fooWriter: Writer[Foo[Option]] = macroW
-}
 
-abstract class UPickleBenchS extends Bench[String] with UPickleBench { self: Params =>
-  import upickle.default._
+  @Benchmark
+  def encodeUPickle: String = write(foos)
 
-  final def encode0(foos: Seq[Foo[Option]]): String = write(foos)
-}
-
-abstract class UPickleASTBenchS extends Bench[String] with UPickleBench { self: Params =>
-  import upickle.default._
-
-  final def encode0(foos: Seq[Foo[Option]]): String = writeJs(foos).render()
+  @Benchmark
+  def encodeUPickleAst: String = writeJs(foos).render()
 }
 
 object State {
