@@ -31,5 +31,7 @@ class BenchSpec extends FunSuite {
   test("CirceAutoBench")(benchTest(new CirceAutoBench with T {}))
   test("ArgonautBench")(benchTest(new ArgonautBench with T {}))
   test("SprayJsonBench")(benchTest(new SprayJsonBench with T {}))
+  // TODO: Unexpected JSON was created
+  test("UPickleBench")(benchTest(new UPickleBench with T {}))
   // test("PlayJsonBench")(benchTest(new PlayJsonBench with T {}))
 }
