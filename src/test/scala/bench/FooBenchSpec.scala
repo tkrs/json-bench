@@ -5,12 +5,12 @@ import org.scalatest._
 
 class FooBenchSpec extends FunSuite {
 
-  trait T extends FooBench[String] {
+  trait T extends Params {
     def length: Int = 10
     def depth: Int = 10
   }
 
-  def benchTest(bench: FooBench[String]): Assertion = {
+  def benchTest(bench: Bench[String]): Assertion = {
     val json = bench.encode(new Data)
     val expected = Seq(
       """{"i":1,"foo":{"i":2,"foo":{"i":3,"foo":{"i":4,"foo":{"i":5,"foo":{"i":6,"foo":{"i":7,"foo":{"i":8,"foo":{"i":9,"foo":{"i":10,"foo":null}}}}}}}}}}""",
@@ -36,5 +36,5 @@ class FooBenchSpec extends FunSuite {
   // TODO: Unexpected JSON was created
   test("Json4sNativeBench")(benchTest(new Json4sNativeBenchS with T {}))
   test("JacksonScalaBench")(benchTest(new JacksonScalaBenchS with T {}))
-  // test("PlayJsonBench")(benchTest(new PlayJsonBench with T {}))
+  // test("PlayJsonBench")(benchTest(new PlayJsonBenchS with T {}))
 }
