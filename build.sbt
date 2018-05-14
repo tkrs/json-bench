@@ -22,6 +22,7 @@ libraryDependencies ++= Seq(
 ).map(_.withSources)
 
 enablePlugins(JmhPlugin)
+scalafmtOnCompile := true // all projects
 
 scalacOptions := Seq(
   "-deprecation",

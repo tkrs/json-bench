@@ -47,15 +47,15 @@ trait DeepBench extends Params {
 class ArgonautPermBenchS extends ArgonautBenchS with PermBench
 class ArgonautDeepBenchS extends ArgonautBenchS with DeepBench
 
-class CirceAutoPermBenchS extends CirceAutoBenchS with PermBench
-class CirceAutoDeepBenchS extends CirceAutoBenchS with DeepBench
+class CirceAutoPermBenchS        extends CirceAutoBenchS with PermBench
+class CirceAutoDeepBenchS        extends CirceAutoBenchS with DeepBench
 class CirceJacksonAutoPermBenchS extends CirceJacksonAutoBenchS with PermBench
 class CirceJacksonAutoDeepBenchS extends CirceJacksonAutoBenchS with DeepBench
 class CirceJacksonAutoPermBenchB extends CirceJacksonAutoBenchB with PermBench
 class CirceJacksonAutoDeepBenchB extends CirceJacksonAutoBenchB with DeepBench
 
-class CircePermBenchS extends CirceBenchS with PermBench
-class CirceDeepBenchS extends CirceBenchS with DeepBench
+class CircePermBenchS        extends CirceBenchS with PermBench
+class CirceDeepBenchS        extends CirceBenchS with DeepBench
 class CirceJacksonPermBenchB extends CirceJacksonBenchB with PermBench
 class CirceJacksonDeepBenchB extends CirceJacksonBenchB with DeepBench
 
@@ -78,8 +78,8 @@ class JacksonScalaDeepBenchB extends JacksonScalaBenchB with DeepBench
 class SprayJsonPermBenchS extends SprayJsonBenchS with PermBench
 class SprayJsonDeepBenchS extends SprayJsonBenchS with DeepBench
 
-class UPicklePermBenchS extends UPickleBenchS with PermBench
-class UPickleDeepBenchS extends UPickleBenchS with DeepBench
+class UPicklePermBenchS    extends UPickleBenchS with PermBench
+class UPickleDeepBenchS    extends UPickleBenchS with DeepBench
 class UPickleASTPermBenchS extends UPickleASTBenchS with PermBench
 class UPickleASTDeepBenchS extends UPickleASTBenchS with DeepBench
 
@@ -88,7 +88,7 @@ trait ArgonautBench {
 
   implicit val encodeFoo: EncodeJson[Foo[Option]] = EncodeJson[Foo[Option]] {
     case Foo(i, Some(foo)) => Json("i" -> Json.jNumber(i), "foo" -> foo.asJson)
-    case Foo(i, _) => Json("i" -> Json.jNumber(i), "foo" -> Json.jNull)
+    case Foo(i, _)         => Json("i" -> Json.jNumber(i), "foo" -> Json.jNull)
   }
 }
 
@@ -127,7 +127,7 @@ trait CirceBench {
 
   implicit val encodeFoo: Encoder[Foo[Option]] = Encoder.instance {
     case Foo(i, Some(f)) => Json.obj("i" := Json.fromInt(i), "foo" := f.asJson)
-    case Foo(i, _) => Json.obj("i" := Json.fromInt(i), "foo" := Json.Null)
+    case Foo(i, _)       => Json.obj("i" := Json.fromInt(i), "foo" := Json.Null)
   }
 }
 
@@ -167,7 +167,8 @@ abstract class JacksonScalaBenchS extends Bench[String] with JacksonScalaBench {
 
 abstract class JacksonScalaBenchB extends Bench[ByteBuffer] with JacksonScalaBench { self: Params =>
 
-  final def encode0(foos: Seq[Foo[Option]]): ByteBuffer = ByteBuffer.wrap(mapper.writeValueAsBytes(foos))
+  final def encode0(foos: Seq[Foo[Option]]): ByteBuffer =
+    ByteBuffer.wrap(mapper.writeValueAsBytes(foos))
 }
 
 trait Json4sNativeBench {
@@ -199,7 +200,7 @@ trait PlayJsonBench {
   implicit val encodeFoo: Writes[Foo[Option]] = (
     (JsPath \ "i").write[Int] and
       (JsPath \ "foo").writeNullable[Foo[Option]]
-    )(unlift[Foo[Option], (Int, Option[Foo[Option]])](a => Foo.unapply[Option](a)))
+  )(unlift(Foo.unapply[Option]))
 }
 
 abstract class PlayJsonBenchS extends Bench[String] with PlayJsonBench { self: Params =>
@@ -211,7 +212,8 @@ abstract class PlayJsonBenchS extends Bench[String] with PlayJsonBench { self: P
 abstract class PlayJsonBenchB extends Bench[ByteBuffer] with PlayJsonBench { self: Params =>
   import play.api.libs.json._
 
-  final def encode0(foos: Seq[Foo[Option]]): ByteBuffer = ByteBuffer.wrap(Json.toBytes(Json.toJson(foos)))
+  final def encode0(foos: Seq[Foo[Option]]): ByteBuffer =
+    ByteBuffer.wrap(Json.toBytes(Json.toJson(foos)))
 }
 
 trait SprayJsonBench {
@@ -261,19 +263,24 @@ object State {
 
   @State(Scope.Benchmark)
   class Data {
-    val foo1_1000: Seq[Foo[Option]] = List(genFoo(999, Foo(1000, Option.empty[Foo[Option]])))
-    val foo10_10: Seq[Foo[Option]] = Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(10).toList
-    val foo100_10: Seq[Foo[Option]] = Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(10).toList
-    val foo10_100: Seq[Foo[Option]] = Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(100).toList
-    val foo100_100: Seq[Foo[Option]] = Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(100).toList
+    val foo1_1000: Seq[Foo[Option]] =
+      List(genFoo(999, Foo(1000, Option.empty[Foo[Option]])))
+    val foo10_10: Seq[Foo[Option]] =
+      Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(10).toList
+    val foo100_10: Seq[Foo[Option]] =
+      Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(10).toList
+    val foo10_100: Seq[Foo[Option]] =
+      Iterator.continually(genFoo(9, Foo(10, Option.empty[Foo[Option]]))).take(100).toList
+    val foo100_100: Seq[Foo[Option]] =
+      Iterator.continually(genFoo(99, Foo(100, Option.empty[Foo[Option]]))).take(100).toList
 
     @inline final def get(length: Int, depth: Int): Seq[Foo[Option]] = (length, depth) match {
-      case (1, 1000) => foo1_1000
-      case (10, 10) => foo10_10
-      case (100, 10) => foo100_10
-      case (10, 100) => foo10_100
+      case (1, 1000)  => foo1_1000
+      case (10, 10)   => foo10_10
+      case (100, 10)  => foo100_10
+      case (10, 100)  => foo10_100
       case (100, 100) => foo100_100
-      case (_, _) => ???
+      case (_, _)     => ???
     }
   }
 }
