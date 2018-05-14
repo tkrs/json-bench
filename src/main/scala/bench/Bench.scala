@@ -83,8 +83,8 @@ trait CirceBench { self: FooBench =>
   import State._
 
   implicit val encodeFoo: Encoder[Foo[Option]] = Encoder.instance {
-    case Foo(i, Some(f)) => Json.obj("i" -> Json.fromInt(i), "foo" -> f.asJson)
-    case Foo(i, _) => Json.obj("i" -> Json.fromInt(i), "foo" -> Json.Null)
+    case Foo(i, Some(f)) => Json.obj("i" := Json.fromInt(i), "foo" := f.asJson)
+    case Foo(i, _) => Json.obj("i" := Json.fromInt(i), "foo" := Json.Null)
   }
 
   final def encode0(foos: Seq[Foo[Option]]): String = foos.asJson.noSpaces
