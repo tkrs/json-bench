@@ -21,7 +21,7 @@ class BenchSpec extends FunSuite {
     assert(f === expected)
   }
 
-  val t = new AllBench with Params {
+  private val t = new Bench with Params {
     def length = 10
     def depth  = 10
   }

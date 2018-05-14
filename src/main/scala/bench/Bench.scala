@@ -8,7 +8,24 @@ import org.openjdk.jmh.annotations._
 import State._
 
 @State(Scope.Benchmark)
-trait Bench { self: Params =>
+@BenchmarkMode(Array(Mode.Throughput))
+@Warmup(iterations = 10, time = 1)
+@Measurement(iterations = 10, time = 2)
+@OutputTimeUnit(TimeUnit.SECONDS)
+@Fork(2)
+abstract class Bench
+    extends ArgonautBench
+    with CirceAutoBench
+    with CirceManualBench
+    with JacksonScalaBench
+    with Json4sBench
+    // with PlayJsonBench
+    with SprayJsonBench
+    with UPickleBench { self: Params =>
+}
+
+@State(Scope.Benchmark)
+trait FooParam { self: Params =>
 
   var foos: Seq[Foo[Option]] = _
 
@@ -23,45 +40,48 @@ trait Params {
   def depth: Int
 }
 
-trait PermBenchParams extends Params {
-
-  @Param(Array("10", "100"))
+trait Params1 extends Params {
+  @Param(Array("10"))
   var length: Int = _
-
-  @Param(Array("10", "100"))
+  @Param(Array("10"))
   var depth: Int = _
 }
 
-trait DeepBenchParams extends Params {
-
-  @Param(Array("1"))
+trait Params2 extends Params {
+  @Param(Array("10"))
   var length: Int = _
+  @Param(Array("100"))
+  var depth: Int = _
+}
 
+trait Params3 extends Params {
+  @Param(Array("100"))
+  var length: Int = _
+  @Param(Array("10"))
+  var depth: Int = _
+}
+
+trait Params4 extends Params {
+  @Param(Array("100"))
+  var length: Int = _
   @Param(Array("1000"))
   var depth: Int = _
 }
 
-@State(Scope.Benchmark)
-@BenchmarkMode(Array(Mode.Throughput))
-@Warmup(iterations = 10, time = 1)
-@Measurement(iterations = 10, time = 2)
-@OutputTimeUnit(TimeUnit.SECONDS)
-@Fork(2)
-abstract class AllBench
-    extends ArgonautBench
-    with CirceAutoBench
-    with CirceManualBench
-    with JacksonScalaBench
-    with Json4sBench
-    // with PlayJsonBench
-    with SprayJsonBench
-    with UPickleBench { self: Params =>
+trait Params5 extends Params {
+  @Param(Array("1"))
+  var length: Int = _
+  @Param(Array("1000"))
+  var depth: Int = _
 }
 
-class PermBench extends AllBench with PermBenchParams
-class DeepBench extends AllBench with DeepBenchParams
+class Case1 extends Bench with Params1
+class Case2 extends Bench with Params2
+class Case3 extends Bench with Params3
+class Case4 extends Bench with Params4
+class Case5 extends Bench with Params5
 
-trait ArgonautBench extends Bench { self: Params =>
+trait ArgonautBench extends FooParam { self: Params =>
   import argonaut._, Argonaut._
 
   implicit val encodeFooForArgonaut: EncodeJson[Foo[Option]] = EncodeJson[Foo[Option]] {
@@ -73,7 +93,7 @@ trait ArgonautBench extends Bench { self: Params =>
   def encodeArgonaut: String = foos.toList.asJson.nospaces
 }
 
-trait CirceAutoBench extends Bench { self: Params =>
+trait CirceAutoBench extends FooParam { self: Params =>
   import io.circe.generic.auto._
   import io.circe.syntax._
   import io.circe.jackson._
@@ -88,7 +108,7 @@ trait CirceAutoBench extends Bench { self: Params =>
   final def encodeCirceAutoJacksonB: ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
 }
 
-trait CirceManualBench extends Bench { self: Params =>
+trait CirceManualBench extends FooParam { self: Params =>
   import io.circe.{Encoder, Json}
   import io.circe.syntax._
   import io.circe.jackson._
@@ -108,7 +128,7 @@ trait CirceManualBench extends Bench { self: Params =>
   def encodeCirceManualJacksonB: ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
 }
 
-trait JacksonScalaBench extends Bench { self: Params =>
+trait JacksonScalaBench extends FooParam { self: Params =>
   import com.fasterxml.jackson.databind.ObjectMapper
   import com.fasterxml.jackson.module.scala.DefaultScalaModule
   import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
@@ -124,7 +144,7 @@ trait JacksonScalaBench extends Bench { self: Params =>
     ByteBuffer.wrap(mapper.writeValueAsBytes(foos))
 }
 
-trait Json4sBench extends Bench { self: Params =>
+trait Json4sBench extends FooParam { self: Params =>
   import org.json4s._
   import native.Serialization.{write => nwrite, formats}
   import jackson.Serialization.{write => swrite}
@@ -139,7 +159,7 @@ trait Json4sBench extends Bench { self: Params =>
 }
 
 // FIXME: NPE occurred...
-trait PlayJsonBench extends Bench { self: Params =>
+trait PlayJsonBench extends FooParam { self: Params =>
   import play.api.libs.json._
   import play.api.libs.functional.syntax._
 
@@ -156,7 +176,7 @@ trait PlayJsonBench extends Bench { self: Params =>
     ByteBuffer.wrap(Json.toBytes(Json.toJson(foos)))
 }
 
-trait SprayJsonBench extends Bench { self: Params =>
+trait SprayJsonBench extends FooParam { self: Params =>
   import spray.json._
   import DefaultJsonProtocol._
 
@@ -170,7 +190,7 @@ trait SprayJsonBench extends Bench { self: Params =>
   final def encodeSprayJson: String = foos.toJson.compactPrint
 }
 
-trait UPickleBench extends Bench { self: Params =>
+trait UPickleBench extends FooParam { self: Params =>
   import upickle.default._
 
   implicit val fooWriter: Writer[Foo[Option]] = macroW
