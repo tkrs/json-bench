@@ -10,7 +10,7 @@ trait Bench {
   def length: Int
   def depth: Int
 
-  protected def encode0(foo: Seq[Foo[Option]]): String
+  protected def encode0(foos: Seq[Foo[Option]]): String
 
   @Benchmark
   def encode(data: Data): String = encode0(data.get(length, depth))
@@ -67,7 +67,7 @@ trait CirceAutoBench { self: Bench =>
   import io.circe.syntax._
   import State._
 
-  def encode0(foo: Seq[Foo[Option]]): String = foo.asJson.noSpaces
+  def encode0(foos: Seq[Foo[Option]]): String = foos.asJson.noSpaces
 }
 
 trait CirceBench { self: Bench =>
@@ -80,7 +80,7 @@ trait CirceBench { self: Bench =>
     case Foo(i, _) => Json.obj("i" -> Json.fromInt(i), "foo" -> Json.Null)
   }
 
-  def encode0(foo: Seq[Foo[Option]]): String = foo.asJson.noSpaces
+  def encode0(foos: Seq[Foo[Option]]): String = foos.asJson.noSpaces
 }
 
 trait SprayJsonBench { self: Bench =>
@@ -94,7 +94,7 @@ trait SprayJsonBench { self: Bench =>
       JsObject("i" -> JsNumber(obj.i), "foo" -> obj.foo.toJson)
   }
 
-  def encode0(foo: Seq[Foo[Option]]): String = foo.toJson.compactPrint
+  def encode0(foos: Seq[Foo[Option]]): String = foos.toJson.compactPrint
 }
 
 trait ArgonautBench { self: Bench =>
