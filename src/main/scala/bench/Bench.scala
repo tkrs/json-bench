@@ -9,7 +9,7 @@ import State._
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
-@Warmup(iterations = 5, time = 1)
+@Warmup(iterations = 10, time = 1)
 @Measurement(iterations = 10, time = 2)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Fork(2)
