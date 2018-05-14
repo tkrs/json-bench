@@ -2,9 +2,6 @@ package bench
 
 import java.util.concurrent.TimeUnit
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.scala.DefaultScalaModule
-import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import org.openjdk.jmh.annotations._
 
 @State(Scope.Thread)
@@ -136,6 +133,9 @@ trait Json4sNativeBench { self: FooBench =>
 }
 
 trait JacksonScalaBench { self: FooBench =>
+  import com.fasterxml.jackson.databind.ObjectMapper
+  import com.fasterxml.jackson.module.scala.DefaultScalaModule
+  import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
   import State._
 
   val mapper = new ObjectMapper() with ScalaObjectMapper
