@@ -24,64 +24,51 @@ abstract class Bench
     with UPickleBench { self: Params =>
 }
 
-@State(Scope.Benchmark)
-trait FooParam { self: Params =>
+trait Params {
 
   var foos: Seq[Foo[Option]] = _
+  def length: Int
+  def depth: Int
 
   @Setup
   def setup(data: Data): Unit = {
     foos = data.get(length, depth)
   }
+
 }
 
-trait Params {
-  def length: Int
-  def depth: Int
-}
-
-trait Params1 extends Params {
+class Case1 extends Bench with Params {
   @Param(Array("10"))
   var length: Int = _
   @Param(Array("10"))
   var depth: Int = _
 }
-
-trait Params2 extends Params {
+class Case2 extends Bench with Params {
   @Param(Array("10"))
   var length: Int = _
   @Param(Array("100"))
   var depth: Int = _
 }
-
-trait Params3 extends Params {
+class Case3 extends Bench with Params {
   @Param(Array("100"))
   var length: Int = _
   @Param(Array("10"))
   var depth: Int = _
 }
-
-trait Params4 extends Params {
+class Case4 extends Bench with Params {
   @Param(Array("100"))
   var length: Int = _
-  @Param(Array("1000"))
+  @Param(Array("100"))
   var depth: Int = _
 }
-
-trait Params5 extends Params {
+class Case5 extends Bench with Params {
   @Param(Array("1"))
   var length: Int = _
   @Param(Array("1000"))
   var depth: Int = _
 }
 
-class Case1 extends Bench with Params1
-class Case2 extends Bench with Params2
-class Case3 extends Bench with Params3
-class Case4 extends Bench with Params4
-class Case5 extends Bench with Params5
-
-trait ArgonautBench extends FooParam { self: Params =>
+trait ArgonautBench { self: Params =>
   import argonaut._, Argonaut._
 
   implicit val encodeFooForArgonaut: EncodeJson[Foo[Option]] = EncodeJson[Foo[Option]] {
@@ -93,7 +80,7 @@ trait ArgonautBench extends FooParam { self: Params =>
   def encodeArgonaut: String = foos.toList.asJson.nospaces
 }
 
-trait CirceAutoBench extends FooParam { self: Params =>
+trait CirceAutoBench { self: Params =>
   import io.circe.generic.auto._
   import io.circe.syntax._
   import io.circe.jackson._
@@ -108,7 +95,7 @@ trait CirceAutoBench extends FooParam { self: Params =>
   final def encodeCirceAutoJacksonB: ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
 }
 
-trait CirceManualBench extends FooParam { self: Params =>
+trait CirceManualBench { self: Params =>
   import io.circe.{Encoder, Json}
   import io.circe.syntax._
   import io.circe.jackson._
@@ -128,7 +115,7 @@ trait CirceManualBench extends FooParam { self: Params =>
   def encodeCirceManualJacksonB: ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
 }
 
-trait JacksonScalaBench extends FooParam { self: Params =>
+trait JacksonScalaBench { self: Params =>
   import com.fasterxml.jackson.databind.ObjectMapper
   import com.fasterxml.jackson.module.scala.DefaultScalaModule
   import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
@@ -144,7 +131,7 @@ trait JacksonScalaBench extends FooParam { self: Params =>
     ByteBuffer.wrap(mapper.writeValueAsBytes(foos))
 }
 
-trait Json4sBench extends FooParam { self: Params =>
+trait Json4sBench { self: Params =>
   import org.json4s._
   import native.Serialization.{write => nwrite, formats}
   import jackson.Serialization.{write => swrite}
@@ -159,7 +146,7 @@ trait Json4sBench extends FooParam { self: Params =>
 }
 
 // FIXME: NPE occurred...
-trait PlayJsonBench extends FooParam { self: Params =>
+trait PlayJsonBench { self: Params =>
   import play.api.libs.json._
   import play.api.libs.functional.syntax._
 
@@ -176,7 +163,7 @@ trait PlayJsonBench extends FooParam { self: Params =>
     ByteBuffer.wrap(Json.toBytes(Json.toJson(foos)))
 }
 
-trait SprayJsonBench extends FooParam { self: Params =>
+trait SprayJsonBench { self: Params =>
   import spray.json._
   import DefaultJsonProtocol._
 
@@ -190,7 +177,7 @@ trait SprayJsonBench extends FooParam { self: Params =>
   final def encodeSprayJson: String = foos.toJson.compactPrint
 }
 
-trait UPickleBench extends FooParam { self: Params =>
+trait UPickleBench { self: Params =>
   import upickle.default._
 
   implicit val fooWriter: Writer[Foo[Option]] = macroW
