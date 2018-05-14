@@ -28,14 +28,13 @@ class BenchSpec extends FunSuite {
     assert(json === expected)
   }
 
-  test("CirceBench")(benchTest(new CirceBenchS with T         {}))
-  test("CirceAutoBench")(benchTest(new CirceAutoBenchS with T {}))
-  test("ArgonautBench")(benchTest(new ArgonautBenchS with T   {}))
-  test("SprayJsonBench")(benchTest(new SprayJsonBenchS with T {}))
-  // TODO: Unexpected JSON was created
-  test("UPickleBench")(benchTest(new UPickleBenchS with T {}))
-  // TODO: Unexpected JSON was created
-  test("Json4sNativeBench")(benchTest(new Json4sNativeBenchS with T {}))
-  test("JacksonScalaBench")(benchTest(new JacksonScalaBenchS with T {}))
-  // test("PlayJsonBench")(benchTest(new PlayJsonBenchS with T {}))
+  test("CirceCoreBench")(benchTest(new CirceCoreBenchS with T         {}))
+  test("CirceAutoBench")(benchTest(new CirceAutoBenchS with T         {}))
+  test("ArgonautBench")(benchTest(new ArgonautBenchS with T           {}))
+  test("SprayJsonBench")(benchTest(new SprayJsonBenchS with T         {}))
+  test("UPickleBench")(benchTest(new UPickleBenchS with T             {})) // TODO: Unexpected JSON was created
+  test("Json4sNativeBench")(benchTest(new Json4sNativeBenchS with T   {})) // TODO: Unexpected JSON was created
+  test("Json4sJacksonBench")(benchTest(new Json4sJacksonBenchS with T {}))
+  test("JacksonScalaBench")(benchTest(new JacksonScalaBenchS with T   {}))
+  test("PlayJsonBench")(benchTest(new PlayJsonBenchS with T           {})) // TODO: NullPointerException occurred
 }

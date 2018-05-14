@@ -56,19 +56,18 @@ class ArgonautDeepBenchS extends ArgonautBenchS with DeepBench
 
 class CirceAutoPermBenchS        extends CirceAutoBenchS with PermBench
 class CirceAutoDeepBenchS        extends CirceAutoBenchS with DeepBench
-class CirceJacksonAutoPermBenchS extends CirceJacksonAutoBenchS with PermBench
-class CirceJacksonAutoDeepBenchS extends CirceJacksonAutoBenchS with DeepBench
-class CirceJacksonAutoPermBenchB extends CirceJacksonAutoBenchB with PermBench
-class CirceJacksonAutoDeepBenchB extends CirceJacksonAutoBenchB with DeepBench
+class CirceAutoJacksonPermBenchS extends CirceAutoJacksonBenchS with PermBench
+class CirceAutoJacksonDeepBenchS extends CirceAutoJacksonBenchS with DeepBench
+class CirceAutoJacksonPermBenchB extends CirceAutoJacksonBenchB with PermBench
+class CirceAutoJacksonDeepBenchB extends CirceAutoJacksonBenchB with DeepBench
 
-class CircePermBenchS        extends CirceBenchS with PermBench
-class CirceDeepBenchS        extends CirceBenchS with DeepBench
-class CirceJacksonPermBenchB extends CirceJacksonBenchB with PermBench
-class CirceJacksonDeepBenchB extends CirceJacksonBenchB with DeepBench
+class CirceCorePermBenchS        extends CirceCoreBenchS with PermBench
+class CirceCoreDeepBenchS        extends CirceCoreBenchS with DeepBench
+class CirceCoreJacksonPermBenchB extends CirceCoreJacksonBenchB with PermBench
+class CirceCoreJacksonDeepBenchB extends CirceCoreJacksonBenchB with DeepBench
 
-class Json4sNativePermBenchS extends Json4sNativeBenchS with PermBench
-class Json4sNativeDeepBenchS extends Json4sNativeBenchS with DeepBench
-
+class Json4sNativePermBenchS  extends Json4sNativeBenchS with PermBench
+class Json4sNativeDeepBenchS  extends Json4sNativeBenchS with DeepBench
 class Json4sJacksonPermBenchS extends Json4sJacksonBenchS with PermBench
 class Json4sJacksonDeepBenchS extends Json4sJacksonBenchS with DeepBench
 
@@ -112,7 +111,7 @@ abstract class CirceAutoBenchS extends Bench[String] { self: Params =>
   final def encode0(foos: Seq[Foo[Option]]): String = foos.asJson.noSpaces
 }
 
-abstract class CirceJacksonAutoBenchS extends Bench[String] { self: Params =>
+abstract class CirceAutoJacksonBenchS extends Bench[String] { self: Params =>
   import io.circe.generic.auto._
   import io.circe.syntax._
   import io.circe.jackson.jacksonPrint
@@ -120,7 +119,7 @@ abstract class CirceJacksonAutoBenchS extends Bench[String] { self: Params =>
   final def encode0(foos: Seq[Foo[Option]]): String = jacksonPrint(foos.asJson)
 }
 
-abstract class CirceJacksonAutoBenchB extends Bench[ByteBuffer] { self: Params =>
+abstract class CirceAutoJacksonBenchB extends Bench[ByteBuffer] { self: Params =>
   import io.circe.generic.auto._
   import io.circe.syntax._
   import io.circe.jackson.jacksonPrintByteBuffer
@@ -138,7 +137,7 @@ trait CirceBench {
   }
 }
 
-abstract class CirceBenchS extends Bench[String] with CirceBench { self: Params =>
+abstract class CirceCoreBenchS extends Bench[String] with CirceBench { self: Params =>
   import io.circe.syntax._
 
   final def encode0(foos: Seq[Foo[Option]]): String = foos.asJson.noSpaces
@@ -151,7 +150,7 @@ abstract class CirceJacksonBenchS extends Bench[String] with CirceBench { self: 
   final def encode0(foos: Seq[Foo[Option]]): String = jacksonPrint(foos.asJson)
 }
 
-abstract class CirceJacksonBenchB extends Bench[ByteBuffer] with CirceBench { self: Params =>
+abstract class CirceCoreJacksonBenchB extends Bench[ByteBuffer] with CirceBench { self: Params =>
   import io.circe.syntax._
   import io.circe.jackson.jacksonPrintByteBuffer
 
