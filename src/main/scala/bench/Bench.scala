@@ -104,7 +104,7 @@ trait CirceAutoBench { self: Params =>
   private[this] lazy val rawJson = foos.asJson.noSpaces
 
   @Benchmark
-  def decodeCirceAuto: Foo[Option] = cdecode[Foo[Option]](rawJson).toTry.get
+  def decodeCirceAuto: Seq[Foo[Option]] = cdecode[Seq[Foo[Option]]](rawJson).toTry.get
 
   @Benchmark
   def encodeCirceAuto: String = foos.asJson.noSpaces
