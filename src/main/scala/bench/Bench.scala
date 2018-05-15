@@ -129,7 +129,7 @@ trait CirceManualBench { self: Params =>
     } yield Foo(i, foo)
     x match {
       case Some(f) => Right(f)
-      case None    => Left(DecodingFailure("Foo[Option]", List.empty))
+      case None    => Left(DecodingFailure("Foo[Option]", hc.history))
     }
   }
 
@@ -177,7 +177,7 @@ trait Json4sBench { self: Params =>
   import native.Serialization.{formats, write => nwrite, read => nread}
   import jackson.Serialization.{write => swrite, read => sread}
 
-  implicit val noTypeHintsFormats: Formats = formats(NoTypeHints)
+  implicit val noTypeHintsFormats: Formats = formats(NoTypeHints).preservingEmptyValues
 
   private[this] lazy val rawJson = nwrite(foos)
 
@@ -219,10 +219,13 @@ trait SprayJsonBench { self: Params =>
   implicit object FooFormat extends JsonFormat[Foo[Option]] {
     def read(json: JsValue): Foo[Option] = json match {
       case JsObject(m) =>
-        val i   = m.get("i").map(_.convertTo[Int]).getOrElse(0)
-        val foo = m.get("foo").map(_.convertTo[Foo[Option]])
+        val i = m.get("i").map(_.convertTo[Int]).getOrElse(0)
+        val foo = m.get("foo").flatMap {
+          case JsNull => None
+          case a      => a.convertTo[Option[Foo[Option]]]
+        }
         Foo(i, foo)
-      case x => throw new Exception(x.toString())
+      case x => throw new Exception(x.toString)
     }
     def write(obj: Foo[Option]): JsValue = JsObject("i" -> JsNumber(obj.i), "foo" -> obj.foo.toJson)
   }
@@ -237,9 +240,20 @@ trait SprayJsonBench { self: Params =>
 }
 
 trait UPickleBench { self: Params =>
+  import upickle._
   import upickle.default._
 
-  implicit val fooUPickleRW: ReadWriter[Foo[Option]] = macroRW
+  def optionReader[T: Reader]: Reader[Option[T]] = reader[Js.Value].map[Option[T]] {
+    case Js.Null => None
+    case jsValue => Some(read[T](jsValue))
+  }
+  def optionWriter[T: Writer]: Writer[Option[T]] = writer[Js.Value].comap {
+    case Some(value) => writeJs(value)
+    case None        => Js.Null
+  }
+  implicit def optionRW[T: Reader: Writer]: ReadWriter[Option[T]] =
+    ReadWriter.join(optionReader, optionWriter)
+  implicit val fooUPickleRW: ReadWriter[Foo[Option]] = macroRW[Foo[Option]]
 
   private[this] lazy val rawJson = write(foos)
 

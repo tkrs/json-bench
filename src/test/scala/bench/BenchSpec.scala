@@ -18,7 +18,9 @@ class BenchSpec extends FunSuite {
       """{"i":1,"foo":{"i":2,"foo":{"i":3,"foo":{"i":4,"foo":{"i":5,"foo":{"i":6,"foo":{"i":7,"foo":{"i":8,"foo":{"i":9,"foo":{"i":10,"foo":null}}}}}}}}}}""",
       """{"i":1,"foo":{"i":2,"foo":{"i":3,"foo":{"i":4,"foo":{"i":5,"foo":{"i":6,"foo":{"i":7,"foo":{"i":8,"foo":{"i":9,"foo":{"i":10,"foo":null}}}}}}}}}}"""
     ).mkString("[", ",", "]")
-    assert(f === expected)
+    val foos = f
+    println(foos)
+    assert(foos === expected)
   }
 
   private val t = new Bench with Params {
@@ -31,9 +33,9 @@ class BenchSpec extends FunSuite {
   test("CirceAutoBench")(benchTest(t.encodeCirceAuto))
   test("ArgonautBench")(benchTest(t.encodeArgonaut))
   test("SprayJsonBench")(benchTest(t.encodeSprayJson))
-  test("UPickleBench")(benchTest(t.encodeUPickle))           // TODO: Unexpected JSON was created
-  test("Json4sNativeBench")(benchTest(t.encodeJson4sNative)) // TODO: Unexpected JSON was created
-  test("Json4sJacksonBench")(benchTest(t.encodeJson4sJackson))
+  test("UPickleBench")(benchTest(t.encodeUPickle))             // TODO: Unexpected JSON was created
+  test("Json4sNativeBench")(benchTest(t.encodeJson4sNative))   // TODO: Unexpected JSON was created
+  test("Json4sJacksonBench")(benchTest(t.encodeJson4sJackson)) // TODO: Unexpected JSON was created
   test("JacksonScalaBench")(benchTest(t.encodeJackson))
   // test("PlayJsonBench")(benchTest(t.encodePlayJson)) // TODO: NullPointerException occurred
 }
