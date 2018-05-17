@@ -112,8 +112,8 @@ trait CirceAutoBench { self: Params =>
   @Benchmark
   def encodeCirceAutoJackson: String = jacksonPrint(foos.asJson)
 
-  @Benchmark
-  def encodeCirceAutoJacksonB: ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
+//  @Benchmark
+//  def encodeCirceAutoJacksonB: ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
 }
 
 trait CirceManualBench { self: Params =>
@@ -148,8 +148,8 @@ trait CirceManualBench { self: Params =>
   @Benchmark
   def encodeCirceManualJackson: String = jacksonPrint(foos.asJson)
 
-  @Benchmark
-  def encodeCirceManualJacksonB: ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
+//  @Benchmark
+//  def encodeCirceManualJacksonB: ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
 }
 
 trait JacksonScalaBench { self: Params =>
@@ -168,8 +168,8 @@ trait JacksonScalaBench { self: Params =>
   @Benchmark
   def encodeJackson: String = mapper.writeValueAsString(foos)
 
-  @Benchmark
-  def encodeJacksonB: ByteBuffer = ByteBuffer.wrap(mapper.writeValueAsBytes(foos))
+//  @Benchmark
+//  def encodeJacksonB: ByteBuffer = ByteBuffer.wrap(mapper.writeValueAsBytes(foos))
 }
 
 trait Json4sBench { self: Params =>
@@ -181,10 +181,12 @@ trait Json4sBench { self: Params =>
 
   private[this] lazy val rawJson = nwrite(foos)
 
-  @Benchmark
+  // TODO: I don't understand why causes MappingException.
+
+  // @Benchmark
   def decodeJson4sNative: Seq[Foo[Option]] = nread(rawJson)
 
-  @Benchmark
+  // @Benchmark
   def decodeJson4sJackson: Seq[Foo[Option]] = sread(rawJson)
 
   @Benchmark
@@ -240,25 +242,27 @@ trait SprayJsonBench { self: Params =>
 }
 
 trait UPickleBench { self: Params =>
-  import upickle._
   import upickle.default._
 
-  def optionReader[T: Reader]: Reader[Option[T]] = reader[Js.Value].map[Option[T]] {
-    case Js.Null => None
-    case jsValue => Some(read[T](jsValue))
-  }
-  def optionWriter[T: Writer]: Writer[Option[T]] = writer[Js.Value].comap {
-    case Some(value) => writeJs(value)
-    case None        => Js.Null
-  }
+  // Note
+  //   uPickle encodes Option[_] to `arr` value.
+  //   But this benchmark needs handle as nullable value.
+  def optionWriter[T: Writer]: Writer[Option[T]] =
+    writer[T].comapNulls[Option[T]](_.getOrElse(null.asInstanceOf[T]))
+  def optionReader[T: Reader]: Reader[Option[T]] =
+    reader[T].map[Option[T]](Option.apply)
   implicit def optionRW[T: Reader: Writer]: ReadWriter[Option[T]] =
     ReadWriter.join(optionReader, optionWriter)
+
   implicit val fooUPickleRW: ReadWriter[Foo[Option]] = macroRW[Foo[Option]]
 
   private[this] lazy val rawJson = write(foos)
 
   @Benchmark
   def decodeUPickle: Seq[Foo[Option]] = read[Seq[Foo[Option]]](rawJson)
+
+  @Benchmark
+  def decodeUPickleAst: Seq[Foo[Option]] = readJs[Seq[Foo[Option]]](upickle.json.read(rawJson))
 
   @Benchmark
   def encodeUPickle: String = write(foos)

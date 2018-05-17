@@ -33,9 +33,9 @@ class BenchSpec extends FunSuite {
   test("CirceAutoBench")(benchTest(t.encodeCirceAuto))
   test("ArgonautBench")(benchTest(t.encodeArgonaut))
   test("SprayJsonBench")(benchTest(t.encodeSprayJson))
-  test("UPickleBench")(benchTest(t.encodeUPickle))             // TODO: Unexpected JSON was created
-  test("Json4sNativeBench")(benchTest(t.encodeJson4sNative))   // TODO: Unexpected JSON was created
-  test("Json4sJacksonBench")(benchTest(t.encodeJson4sJackson)) // TODO: Unexpected JSON was created
+  test("Json4sNativeBench")(benchTest(t.encodeJson4sNative))
+  test("Json4sJacksonBench")(benchTest(t.encodeJson4sJackson))
   test("JacksonScalaBench")(benchTest(t.encodeJackson))
+  test("UPickleBench")(benchTest(t.encodeUPickle))
   // test("PlayJsonBench")(benchTest(t.encodePlayJson)) // TODO: NullPointerException occurred
 }
