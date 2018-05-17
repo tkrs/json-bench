@@ -177,12 +177,11 @@ trait Json4sBench { self: Params =>
   import native.Serialization.{write => nwrite, read => nread}
   import jackson.Serialization.{write => swrite, read => sread}
 
+  // FIXME: MappingException occurs during decoding; I don't know why that happens.
   implicit val json4sDefaultFormats: Formats =
     DefaultFormats.preservingEmptyValues
 
   private[this] lazy val rawJson = nwrite(foos)
-
-  // FIXME: I don't understand why causes MappingException.
 
   @Benchmark
   def decodeJson4sNative: Seq[Foo[Option]] = nread(rawJson)
@@ -197,11 +196,11 @@ trait Json4sBench { self: Params =>
   def encodeJson4sJackson: String = swrite(foos)
 }
 
-// FIXME: NPE occurred...
 trait PlayJsonBench { self: Params =>
   import play.api.libs.json._
   import play.api.libs.functional.syntax._
 
+  // FIXME: NPE occurred...
   implicit val encodeFooPlayJson: Writes[Foo[Option]] = (
     (JsPath \ "i").write[Int] and
       (JsPath \ "foo").writeNullable[Foo[Option]]
