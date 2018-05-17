@@ -174,19 +174,20 @@ trait JacksonScalaBench { self: Params =>
 
 trait Json4sBench { self: Params =>
   import org.json4s._
-  import native.Serialization.{formats, write => nwrite, read => nread}
+  import native.Serialization.{write => nwrite, read => nread}
   import jackson.Serialization.{write => swrite, read => sread}
 
-  implicit val noTypeHintsFormats: Formats = formats(NoTypeHints).preservingEmptyValues
+  implicit val json4sDefaultFormats: Formats =
+    DefaultFormats.preservingEmptyValues
 
   private[this] lazy val rawJson = nwrite(foos)
 
-  // TODO: I don't understand why causes MappingException.
+  // FIXME: I don't understand why causes MappingException.
 
-  // @Benchmark
+  @Benchmark
   def decodeJson4sNative: Seq[Foo[Option]] = nread(rawJson)
 
-  // @Benchmark
+  @Benchmark
   def decodeJson4sJackson: Seq[Foo[Option]] = sread(rawJson)
 
   @Benchmark
