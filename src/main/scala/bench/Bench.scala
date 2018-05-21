@@ -216,16 +216,16 @@ trait JsoniterScalaBench { self: Params =>
   import com.github.plokhotnyuk.jsoniter_scala.core._
 
   implicit val jsoniterScalaCodec = JsonCodecMaker.make[Seq[Foo[Option]]](CodecMakerConfig())
-  val jsoniterReaderConfig        = ReaderConfig(preferredBufSize = 256 * 1024) // 256Kb
-  val jsoniterWriteConfig         = WriterConfig(preferredBufSize = 256 * 1024) // 256Kb
+  val jsoniterReaderConfig        = ReaderConfig(preferredBufSize = 1024 * 1024) // 1Mb
+  val jsoniterWriteConfig         = WriterConfig(preferredBufSize = 1024 * 1024) // 1Mb
 
   private[this] lazy val rawJson = writeToArray(foos)
 
   @Benchmark
-  def decodeJsoniterScala: Seq[Foo[Option]] = readFromArray(rawJson)
+  def decodeJsoniterScala: Seq[Foo[Option]] = readFromArray(rawJson, jsoniterReaderConfig)
 
   @Benchmark
-  def encodeJsoniterScala: Array[Byte] = writeToArray(foos)
+  def encodeJsoniterScala: Array[Byte] = writeToArray(foos, jsoniterWriteConfig)
 }
 
 trait PlayJsonBench { self: Params =>
