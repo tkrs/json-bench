@@ -1,20 +1,22 @@
 import sbt._
 
 object Dependencies {
-  lazy val playJson = "com.typesafe.play" %% "play-json" % "2.6.7"
+  lazy val playJson = "com.typesafe.play" %% "play-json" % "2.6.9"
 
-  lazy val sprayJson = "io.spray" %%  "spray-json" % "1.3.3"
+  lazy val sprayJson = "io.spray" %%  "spray-json" % "1.3.4"
 
   lazy val argonaut = "io.argonaut" %% "argonaut" % "6.2.1"
 
   lazy val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.5"
 
-  lazy val uPickle = "com.lihaoyi" %% "upickle" % "0.6.5"
-  lazy val uJson = "com.lihaoyi" %% "ujson" % "0.6.5"
+  lazy val uPickle = "com.lihaoyi" %% "upickle" % "0.6.6"
+  lazy val uJson = "com.lihaoyi" %% "ujson" % "0.6.6"
 
-  lazy val json4sVersion = "3.5.3"
+  lazy val json4sVersion = "3.5.4"
   lazy val json4sNative = "org.json4s" %% "json4s-native" % json4sVersion
   lazy val json4sJackson = "org.json4s" %% "json4s-jackson" % json4sVersion
+
+  lazy val jsoniterScala = "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.27.0"
 
   lazy val circeVersion = "0.9.3"
   lazy val circeCore = "io.circe" %% "circe-core" % circeVersion
