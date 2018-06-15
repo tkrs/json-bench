@@ -223,10 +223,10 @@ trait JsoniterScalaBench { self: Params =>
   private[this] lazy val rawJson = writeToArray(foos)
 
   @Benchmark
-  def decodeJsoniterScala: Seq[Foo[Option]] = readFromArray(rawJson, jsoniterReaderConfig)
+  def decodeJsoniterScalaFromBytes: Seq[Foo[Option]] = readFromArray(rawJson, jsoniterReaderConfig)
 
   @Benchmark
-  def encodeJsoniterScala: Array[Byte] = writeToArray(foos, jsoniterWriteConfig)
+  def encodeJsoniterScalaToBytes: Array[Byte] = writeToArray(foos, jsoniterWriteConfig)
 }
 
 trait PlayJsonBench { self: Params =>

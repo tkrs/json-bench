@@ -16,7 +16,8 @@ object Dependencies {
   lazy val json4sNative = "org.json4s" %% "json4s-native" % json4sVersion
   lazy val json4sJackson = "org.json4s" %% "json4s-jackson" % json4sVersion
 
-  lazy val jsoniterScala = "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.27.0"
+  lazy val jsoniterScalaCore = "com.github.plokhotnyuk.jsoniter-scala" %% "core" % "0.28.0"
+  lazy val jsoniterScalaMacros = "com.github.plokhotnyuk.jsoniter-scala" %% "macros" % "0.28.0" % Provided // required only for compile-time
 
   lazy val circeVersion = "0.9.3"
   lazy val circeCore = "io.circe" %% "circe-core" % circeVersion
