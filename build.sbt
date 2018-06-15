@@ -10,6 +10,8 @@ libraryDependencies ++= Seq(
   sprayJson,
   json4sNative,
   json4sJackson,
+  jsoniterScalaCore,
+  jsoniterScalaMacros,
   circeCore,
   circeGeneric,
   circeParser,

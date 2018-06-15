@@ -10,15 +10,31 @@ import io.circe.{Decoder, DecodingFailure}
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
 @Warmup(iterations = 10, time = 1)
-@Measurement(iterations = 10, time = 2)
+@Measurement(iterations = 10, time = 1)
 @OutputTimeUnit(TimeUnit.SECONDS)
-@Fork(2)
+@Fork(
+  value = 2,
+  jvmArgs = Array(
+    "-server",
+    "-Xss2m",
+    "-Xms2g",
+    "-Xmx2g",
+    "-XX:NewSize=1g",
+    "-XX:MaxNewSize=1g",
+    "-XX:InitialCodeCacheSize=512m",
+    "-XX:ReservedCodeCacheSize=512m",
+    "-XX:+UseParallelGC",
+    "-XX:-UseBiasedLocking",
+    "-XX:+AlwaysPreTouch"
+  )
+)
 abstract class Bench
     extends ArgonautBench
     with CirceAutoBench
     with CirceManualBench
     with JacksonScalaBench
     with Json4sBench
+    with JsoniterScalaBench
     // with PlayJsonBench
     with SprayJsonBench
     with UPickleBench { self: Params =>
@@ -194,6 +210,23 @@ trait Json4sBench { self: Params =>
 
   @Benchmark
   def encodeJson4sJackson: String = swrite(foos)
+}
+
+trait JsoniterScalaBench { self: Params =>
+  import com.github.plokhotnyuk.jsoniter_scala.macros._
+  import com.github.plokhotnyuk.jsoniter_scala.core._
+
+  implicit val jsoniterScalaCodec = JsonCodecMaker.make[Seq[Foo[Option]]](CodecMakerConfig())
+  val jsoniterReaderConfig        = ReaderConfig(preferredBufSize = 1024 * 1024) // 1Mb
+  val jsoniterWriteConfig         = WriterConfig(preferredBufSize = 1024 * 1024) // 1Mb
+
+  private[this] lazy val rawJson = writeToArray(foos)
+
+  @Benchmark
+  def decodeJsoniterScalaFromBytes: Seq[Foo[Option]] = readFromArray(rawJson, jsoniterReaderConfig)
+
+  @Benchmark
+  def encodeJsoniterScalaToBytes: Array[Byte] = writeToArray(foos, jsoniterWriteConfig)
 }
 
 trait PlayJsonBench { self: Params =>
