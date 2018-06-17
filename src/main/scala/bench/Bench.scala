@@ -5,7 +5,6 @@ import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
 import State._
-import io.circe.{Decoder, DecodingFailure}
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
@@ -31,9 +30,11 @@ import io.circe.{Decoder, DecodingFailure}
 abstract class Bench
     extends ArgonautBench
     with CirceAutoBench
-    with CirceManualBench
+    with CirceBench
+    with CirceJacksonAutoBench
     with JacksonScalaBench
     with Json4sBench
+    with Json4sJacksonBench
     with JsoniterScalaBench
     // with PlayJsonBench
     with SprayJsonBench
@@ -50,7 +51,6 @@ trait Params {
   def setup(data: Data): Unit = {
     foos = data.get(length, depth)
   }
-
 }
 
 class Case1 extends Bench with Params {
@@ -111,32 +111,10 @@ trait ArgonautBench { self: Params =>
   def encodeArgonaut: String = foos.toList.asJson.nospaces
 }
 
-trait CirceAutoBench { self: Params =>
-  import io.circe.generic.auto._
+trait CirceBench { self: Params =>
+  import io.circe.{Decoder, Encoder, Json, DecodingFailure}
   import io.circe.parser.{decode => cdecode}
   import io.circe.syntax._
-  import io.circe.jackson._
-
-  private[this] lazy val rawJson = foos.asJson.noSpaces
-
-  @Benchmark
-  def decodeCirceAuto: Seq[Foo[Option]] = cdecode[Seq[Foo[Option]]](rawJson).toTry.get
-
-  @Benchmark
-  def encodeCirceAuto: String = foos.asJson.noSpaces
-
-  @Benchmark
-  def encodeCirceAutoJackson: String = jacksonPrint(foos.asJson)
-
-//  @Benchmark
-//  def encodeCirceAutoJacksonB: ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
-}
-
-trait CirceManualBench { self: Params =>
-  import io.circe.{Encoder, Json}
-  import io.circe.parser.{decode => cdecode}
-  import io.circe.syntax._
-  import io.circe.jackson._
 
   implicit val decodeFooCirce: Decoder[Foo[Option]] = Decoder.instance { hc =>
     val x = for {
@@ -156,16 +134,39 @@ trait CirceManualBench { self: Params =>
   private[this] lazy val rawJson = foos.asJson.noSpaces
 
   @Benchmark
-  def decodeCirceManual: Seq[Foo[Option]] = cdecode[Seq[Foo[Option]]](rawJson).toTry.get
+  def decodeCirce: Seq[Foo[Option]] = cdecode[Seq[Foo[Option]]](rawJson).right.get
 
   @Benchmark
-  def encodeCirceManual: String = foos.asJson.noSpaces
+  def encodeCirce: String = foos.asJson.noSpaces
+}
+
+trait CirceAutoBench { self: Params =>
+  import io.circe.generic.auto._
+  import io.circe.parser.{decode => cdecode}
+  import io.circe.syntax._
+
+  private[this] lazy val rawJson = foos.asJson.noSpaces
 
   @Benchmark
-  def encodeCirceManualJackson: String = jacksonPrint(foos.asJson)
+  def decodeCirceAuto: Seq[Foo[Option]] = cdecode[Seq[Foo[Option]]](rawJson).right.get
 
-//  @Benchmark
-//  def encodeCirceManualJacksonB: ByteBuffer = jacksonPrintByteBuffer(foos.asJson)
+  @Benchmark
+  def encodeCirceAuto: String = foos.asJson.noSpaces
+}
+
+trait CirceJacksonAutoBench { self: Params =>
+  import io.circe.generic.auto._
+  import io.circe.syntax._
+  import io.circe.jackson._
+
+  private[this] lazy val rawJson = jacksonPrintByteBuffer(foos.asJson)
+
+  @Benchmark
+  def decodeCirceAutoFromBytes: Seq[Foo[Option]] =
+    decodeByteArray[Seq[Foo[Option]]](rawJson.array()).right.get
+
+  @Benchmark
+  def encodeCirceAutoToBytes: Array[Byte] = jacksonPrintByteBuffer(foos.asJson).array()
 }
 
 trait JacksonScalaBench { self: Params =>
@@ -173,7 +174,7 @@ trait JacksonScalaBench { self: Params =>
   import com.fasterxml.jackson.module.scala.DefaultScalaModule
   import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 
-  val mapper = new ObjectMapper() with ScalaObjectMapper
+  private[this] val mapper = new ObjectMapper() with ScalaObjectMapper
   mapper.registerModule(DefaultScalaModule)
 
   private[this] lazy val rawJson = mapper.writeValueAsString(foos)
@@ -183,30 +184,35 @@ trait JacksonScalaBench { self: Params =>
 
   @Benchmark
   def encodeJackson: String = mapper.writeValueAsString(foos)
-
-//  @Benchmark
-//  def encodeJacksonB: ByteBuffer = ByteBuffer.wrap(mapper.writeValueAsBytes(foos))
 }
 
 trait Json4sBench { self: Params =>
   import org.json4s._
   import native.Serialization.{write => nwrite, read => nread}
-  import jackson.Serialization.{write => swrite, read => sread}
 
   // FIXME: MappingException occurs during decoding; I don't know why that happens.
-  implicit val json4sDefaultFormats: Formats =
-    DefaultFormats.preservingEmptyValues
+  private[this] implicit val json4sDefaultFormats: Formats = DefaultFormats.preservingEmptyValues
 
   private[this] lazy val rawJson = nwrite(foos)
 
   @Benchmark
-  def decodeJson4sNative: Seq[Foo[Option]] = nread(rawJson)
+  def decodeJson4s: Seq[Foo[Option]] = nread(rawJson)
+
+  @Benchmark
+  def encodeJson4s: String = nwrite(foos)
+}
+
+trait Json4sJacksonBench { self: Params =>
+  import org.json4s._
+  import jackson.Serialization.{write => swrite, read => sread}
+
+  // FIXME: MappingException occurs during decoding; I don't know why that happens.
+  private[this] implicit val json4sDefaultFormats: Formats = DefaultFormats.preservingEmptyValues
+
+  private[this] lazy val rawJson = swrite(foos)
 
   @Benchmark
   def decodeJson4sJackson: Seq[Foo[Option]] = sread(rawJson)
-
-  @Benchmark
-  def encodeJson4sNative: String = nwrite(foos)
 
   @Benchmark
   def encodeJson4sJackson: String = swrite(foos)
@@ -216,9 +222,11 @@ trait JsoniterScalaBench { self: Params =>
   import com.github.plokhotnyuk.jsoniter_scala.macros._
   import com.github.plokhotnyuk.jsoniter_scala.core._
 
-  implicit val jsoniterScalaCodec = JsonCodecMaker.make[Seq[Foo[Option]]](CodecMakerConfig())
-  val jsoniterReaderConfig        = ReaderConfig(preferredBufSize = 1024 * 1024) // 1Mb
-  val jsoniterWriteConfig         = WriterConfig(preferredBufSize = 1024 * 1024) // 1Mb
+  implicit val jsoniterScalaCodec: JsonValueCodec[Seq[Foo[Option]]] =
+    JsonCodecMaker.make[Seq[Foo[Option]]](CodecMakerConfig())
+
+  val jsoniterReaderConfig = ReaderConfig(preferredBufSize = 1024 * 1024) // 1Mb
+  val jsoniterWriteConfig  = WriterConfig(preferredBufSize = 1024 * 1024) // 1Mb
 
   private[this] lazy val rawJson = writeToArray(foos)
 
