@@ -29,11 +29,11 @@ class BenchSpec extends FunSuite {
   }
   t.setup(new Data)
 
-  test("CirceManualBench")(benchTest(t.encodeCirceManual))
+  test("CirceManualBench")(benchTest(t.encodeCirce))
   test("CirceAutoBench")(benchTest(t.encodeCirceAuto))
   test("ArgonautBench")(benchTest(t.encodeArgonaut))
   test("SprayJsonBench")(benchTest(t.encodeSprayJson))
-  test("Json4sNativeBench")(benchTest(t.encodeJson4sNative))
+  test("Json4sNativeBench")(benchTest(t.encodeJson4s))
   test("Json4sJacksonBench")(benchTest(t.encodeJson4sJackson))
   //test("JsoninterScalaBench")(benchTest(new String(t.encodeJsoniterScalaToBytes, "UTF-8"))) // TODO: Use a custom codec to serialize optional fields with None as JSON key/value pair with null values
   test("JacksonScalaBench")(benchTest(t.encodeJackson))
