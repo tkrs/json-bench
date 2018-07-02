@@ -38,8 +38,8 @@ abstract class Bench
     with JsoniterScalaBench
     // with PlayJsonBench
     with SprayJsonBench
-    with UPickleBench { self: Params =>
-}
+    with UPickleBench
+    with Params
 
 trait Params {
 
