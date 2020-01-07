@@ -7,20 +7,16 @@ ThisBuild / scalaVersion := "2.12.10"
 ThisBuild / scalafmtOnCompile := true
 
 libraryDependencies ++= Seq(
-  playJson,
-  sprayJson,
-  json4sNative,
-  json4sJackson,
-  jsoniterScalaCore,
-  jsoniterScalaMacros,
+  argonaut,
   circeCore,
   circeGeneric,
+  circeJackson,
   circeParser,
-  circeJackson29,
-  argonaut,
-  jacksonScala,
-  uPickle,
+  jsoniterScalaCore,
+  jsoniterScalaMacros,
+  sprayJson,
   uJson,
+  uPickle,
   scalaTest % Test
 ).map(_.withSources)
 

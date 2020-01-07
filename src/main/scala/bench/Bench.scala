@@ -31,11 +31,7 @@ abstract class Bench
     with CirceAutoBench
     with CirceBench
     with CirceJacksonAutoBench
-    with JacksonScalaBench
-    with Json4sBench
-    with Json4sJacksonBench
     with JsoniterScalaBench
-    // with PlayJsonBench
     with SprayJsonBench
     with UPickleBench
     with Params
@@ -103,7 +99,8 @@ trait ArgonautBench { self: Params =>
   private[this] lazy val rawJson = foos.toList.asJson.nospaces
 
   @Benchmark
-  def decodeArgonaut: Seq[Foo[Option]] = rawJson.decode[List[Foo[Option]]].toOption.get
+  def decodeArgonaut: Either[Either[String, (String, CursorHistory)], Seq[Foo[Option]]] =
+    rawJson.decode[List[Foo[Option]]]
 
   @Benchmark
   def encodeArgonaut: String = foos.toList.asJson.nospaces
@@ -132,10 +129,10 @@ trait CirceBench { self: Params =>
   private[this] lazy val rawJson = foos.asJson.noSpaces
 
   @Benchmark
-  def decodeCirce: Seq[Foo[Option]] = cdecode[Seq[Foo[Option]]](rawJson).getOrElse(???)
+  def decodeCirce: Either[Throwable, Seq[Foo[Option]]] = cdecode[Seq[Foo[Option]]](rawJson)
 
   @Benchmark
-  def encodeCirce: String = foos.asJson.noSpaces
+  def encodeCirce: String = foos.asJson.dropNullValues.noSpaces
 }
 
 trait CirceAutoBench { self: Params =>
@@ -146,10 +143,10 @@ trait CirceAutoBench { self: Params =>
   private[this] lazy val rawJson = foos.asJson.noSpaces
 
   @Benchmark
-  def decodeCirceAuto: Seq[Foo[Option]] = cdecode[Seq[Foo[Option]]](rawJson).getOrElse(???)
+  def decodeCirceAuto: Either[Throwable, Seq[Foo[Option]]] = cdecode[Seq[Foo[Option]]](rawJson)
 
   @Benchmark
-  def encodeCirceAuto: String = foos.asJson.noSpaces
+  def encodeCirceAuto: String = foos.asJson.dropNullValues.noSpaces
 }
 
 trait CirceJacksonAutoBench { self: Params =>
@@ -164,56 +161,7 @@ trait CirceJacksonAutoBench { self: Params =>
     decodeByteArray[Seq[Foo[Option]]](rawJson.array()).getOrElse(???)
 
   @Benchmark
-  def encodeCirceAutoToBytes: Array[Byte] = jacksonPrintByteBuffer(foos.asJson).array()
-}
-
-trait JacksonScalaBench { self: Params =>
-  import com.fasterxml.jackson.databind.ObjectMapper
-  import com.fasterxml.jackson.module.scala.DefaultScalaModule
-  import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
-
-  private[this] val mapper = new ObjectMapper() with ScalaObjectMapper
-  mapper.registerModule(DefaultScalaModule)
-
-  private[this] lazy val rawJson = mapper.writeValueAsString(foos)
-
-  @Benchmark
-  def decodeJackson: Seq[Foo[Option]] = mapper.readValue(rawJson, classOf[Seq[Foo[Option]]])
-
-  @Benchmark
-  def encodeJackson: String = mapper.writeValueAsString(foos)
-}
-
-trait Json4sBench { self: Params =>
-  import org.json4s._
-  import native.Serialization.{write => nwrite, read => nread}
-
-  // FIXME: MappingException occurs during decoding; I don't know why that happens.
-  implicit private[this] val json4sDefaultFormats: Formats = DefaultFormats.preservingEmptyValues
-
-  private[this] lazy val rawJson = nwrite(foos)
-
-  @Benchmark
-  def decodeJson4s: Seq[Foo[Option]] = nread(rawJson)
-
-  @Benchmark
-  def encodeJson4s: String = nwrite(foos)
-}
-
-trait Json4sJacksonBench { self: Params =>
-  import org.json4s._
-  import jackson.Serialization.{write => swrite, read => sread}
-
-  // FIXME: MappingException occurs during decoding; I don't know why that happens.
-  implicit private[this] val json4sDefaultFormats: Formats = DefaultFormats.preservingEmptyValues
-
-  private[this] lazy val rawJson = swrite(foos)
-
-  @Benchmark
-  def decodeJson4sJackson: Seq[Foo[Option]] = sread(rawJson)
-
-  @Benchmark
-  def encodeJson4sJackson: String = swrite(foos)
+  def encodeCirceAutoToBytes: Array[Byte] = jacksonPrintByteBuffer(foos.asJson.dropNullValues).array()
 }
 
 trait JsoniterScalaBench { self: Params =>
@@ -234,23 +182,6 @@ trait JsoniterScalaBench { self: Params =>
   @Benchmark
   def encodeJsoniterScalaToBytes: Array[Byte] = writeToArray(foos, jsoniterWriteConfig)
 }
-
-// trait PlayJsonBench { self: Params =>
-//   import play.api.libs.json._
-//   import play.api.libs.functional.syntax._
-
-//   private[this] val i = ((__ \ implicitly[JsonConfiguration].naming("i")).format[Int])
-
-//   // FIXME: NPE occurred...
-//   implicit val formatFooPlayJson: Format[Foo[Option]] =
-//     (i.and((__ \ implicitly[JsonConfiguration].naming("foo")).formatNullable[Foo[Option]]))(
-//       Foo.apply[Option],
-//       unlift(Foo.unapply[Option])
-//     )
-
-//   @Benchmark
-//   def encodePlayJson: String = Json.stringify(Json.toJson(foos))
-// }
 
 trait SprayJsonBench { self: Params =>
   import spray.json._
@@ -283,16 +214,6 @@ trait SprayJsonBench { self: Params =>
 
 trait UPickleBench { self: Params =>
   import upickle.default._
-
-  // Note
-  //   uPickle encodes Option[_] to `arr` value.
-  //   But this benchmark needs handle as nullable value.
-  def optionWriter[T: Writer]: Writer[Option[T]] =
-    writer[T].comapNulls[Option[T]](_.getOrElse(null.asInstanceOf[T]))
-  def optionReader[T: Reader]: Reader[Option[T]] =
-    reader[T].map[Option[T]](Option.apply)
-  implicit def optionRW[T: Reader: Writer]: ReadWriter[Option[T]] =
-    ReadWriter.join(optionReader, optionWriter)
 
   implicit val fooUPickleRW: ReadWriter[Foo[Option]] = macroRW[Foo[Option]]
 
