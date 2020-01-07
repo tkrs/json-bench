@@ -1,16 +1,15 @@
 package bench
 
-import java.nio.ByteBuffer
-import java.util.concurrent.TimeUnit
-
 import org.openjdk.jmh.annotations._
 import State._
+
+import scala.concurrent.duration._
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
 @Warmup(iterations = 10, time = 1)
 @Measurement(iterations = 10, time = 1)
-@OutputTimeUnit(TimeUnit.SECONDS)
+@OutputTimeUnit(SECONDS)
 @Fork(
   value = 2,
   jvmArgs = Array(
@@ -236,30 +235,28 @@ trait JsoniterScalaBench { self: Params =>
   def encodeJsoniterScalaToBytes: Array[Byte] = writeToArray(foos, jsoniterWriteConfig)
 }
 
-trait PlayJsonBench { self: Params =>
-  import play.api.libs.json._
-  import play.api.libs.functional.syntax._
+// trait PlayJsonBench { self: Params =>
+//   import play.api.libs.json._
+//   import play.api.libs.functional.syntax._
 
-  // FIXME: NPE occurred...
-  implicit val encodeFooPlayJson: Writes[Foo[Option]] = (
-    ((JsPath \ "i")
-      .write[Int])
-      .and((JsPath \ "foo").writeNullable[Foo[Option]])
-    )(unlift(Foo.unapply[Option]))
+//   private[this] val i = ((__ \ implicitly[JsonConfiguration].naming("i")).format[Int])
 
-  // @Benchmark
-  def encodePlayJson: String = Json.stringify(Json.toJson(foos))
+//   // FIXME: NPE occurred...
+//   implicit val formatFooPlayJson: Format[Foo[Option]] =
+//     (i.and((__ \ implicitly[JsonConfiguration].naming("foo")).formatNullable[Foo[Option]]))(
+//       Foo.apply[Option],
+//       unlift(Foo.unapply[Option])
+//     )
 
-  // @Benchmark
-  def encodePlayJsonB: ByteBuffer =
-    ByteBuffer.wrap(Json.toBytes(Json.toJson(foos)))
-}
+//   @Benchmark
+//   def encodePlayJson: String = Json.stringify(Json.toJson(foos))
+// }
 
 trait SprayJsonBench { self: Params =>
   import spray.json._
   import DefaultJsonProtocol._
 
-  implicit val fooFormat: JsonFormat[Foo[Option]] = new JsonFormat[Foo[Option]] {
+  implicit val formatFooSprayJson: JsonFormat[Foo[Option]] = new JsonFormat[Foo[Option]] {
     def read(json: JsValue): Foo[Option] = json match {
       case JsObject(m) =>
         val i = m.get("i").map(_.convertTo[Int]).getOrElse(0)
@@ -268,7 +265,8 @@ trait SprayJsonBench { self: Params =>
           case a      => a.convertTo[Option[Foo[Option]]]
         }
         Foo(i, foo)
-      case x => throw new Exception(x.toString)
+      case x =>
+        throw new Exception(x.toString)
     }
     def write(obj: Foo[Option]): JsValue =
       JsObject("i" -> JsNumber(obj.i), "foo" -> obj.foo.toJson)

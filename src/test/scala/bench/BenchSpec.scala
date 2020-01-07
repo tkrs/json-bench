@@ -6,20 +6,13 @@ import org.scalatest.funsuite._
 
 class BenchSpec extends AnyFunSuite {
 
-  def benchTest(f: => String): Assertion = {
-    val expected = Seq(
-      """{"i":1,"foo":{"i":2,"foo":{"i":3,"foo":{"i":4,"foo":{"i":5,"foo":{"i":6,"foo":{"i":7,"foo":{"i":8,"foo":{"i":9,"foo":{"i":10,"foo":null}}}}}}}}}}""",
-      """{"i":1,"foo":{"i":2,"foo":{"i":3,"foo":{"i":4,"foo":{"i":5,"foo":{"i":6,"foo":{"i":7,"foo":{"i":8,"foo":{"i":9,"foo":{"i":10,"foo":null}}}}}}}}}}""",
-      """{"i":1,"foo":{"i":2,"foo":{"i":3,"foo":{"i":4,"foo":{"i":5,"foo":{"i":6,"foo":{"i":7,"foo":{"i":8,"foo":{"i":9,"foo":{"i":10,"foo":null}}}}}}}}}}""",
-      """{"i":1,"foo":{"i":2,"foo":{"i":3,"foo":{"i":4,"foo":{"i":5,"foo":{"i":6,"foo":{"i":7,"foo":{"i":8,"foo":{"i":9,"foo":{"i":10,"foo":null}}}}}}}}}}""",
-      """{"i":1,"foo":{"i":2,"foo":{"i":3,"foo":{"i":4,"foo":{"i":5,"foo":{"i":6,"foo":{"i":7,"foo":{"i":8,"foo":{"i":9,"foo":{"i":10,"foo":null}}}}}}}}}}""",
-      """{"i":1,"foo":{"i":2,"foo":{"i":3,"foo":{"i":4,"foo":{"i":5,"foo":{"i":6,"foo":{"i":7,"foo":{"i":8,"foo":{"i":9,"foo":{"i":10,"foo":null}}}}}}}}}}""",
-      """{"i":1,"foo":{"i":2,"foo":{"i":3,"foo":{"i":4,"foo":{"i":5,"foo":{"i":6,"foo":{"i":7,"foo":{"i":8,"foo":{"i":9,"foo":{"i":10,"foo":null}}}}}}}}}}""",
-      """{"i":1,"foo":{"i":2,"foo":{"i":3,"foo":{"i":4,"foo":{"i":5,"foo":{"i":6,"foo":{"i":7,"foo":{"i":8,"foo":{"i":9,"foo":{"i":10,"foo":null}}}}}}}}}}""",
-      """{"i":1,"foo":{"i":2,"foo":{"i":3,"foo":{"i":4,"foo":{"i":5,"foo":{"i":6,"foo":{"i":7,"foo":{"i":8,"foo":{"i":9,"foo":{"i":10,"foo":null}}}}}}}}}}""",
-      """{"i":1,"foo":{"i":2,"foo":{"i":3,"foo":{"i":4,"foo":{"i":5,"foo":{"i":6,"foo":{"i":7,"foo":{"i":8,"foo":{"i":9,"foo":{"i":10,"foo":null}}}}}}}}}}"""
-    ).mkString("[", ",", "]")
-    val foos = f
+  def benchTest(f: => String, nullable: Boolean = true): Assertion = {
+    val foo = (1 to 10).foldRight("null") {
+      case (i, acc) if i == 10 && !nullable => s"""{"i":$i}"""
+      case (i, acc)                         => s"""{"i":$i,"foo":$acc}"""
+    }
+    val expected = (1 to 10).map(_ => foo).mkString("[", ",", "]")
+    val foos     = f
     // println(foos)
     assert(foos === expected)
   }
@@ -36,7 +29,7 @@ class BenchSpec extends AnyFunSuite {
   test("SprayJsonBench")(benchTest(t.encodeSprayJson))
   test("Json4sNativeBench")(benchTest(t.encodeJson4s))
   test("Json4sJacksonBench")(benchTest(t.encodeJson4sJackson))
-  //test("JsoninterScalaBench")(benchTest(new String(t.encodeJsoniterScalaToBytes, "UTF-8"))) // TODO: Use a custom codec to serialize optional fields with None as JSON key/value pair with null values
+  test("JsoninterScalaBench")(benchTest(new String(t.encodeJsoniterScalaToBytes, "UTF-8"), false)) // TODO: Use a custom codec to serialize optional fields with None as JSON key/value pair with null values
   test("JacksonScalaBench")(benchTest(t.encodeJackson))
   test("UPickleBench")(benchTest(t.encodeUPickle))
   // test("PlayJsonBench")(benchTest(t.encodePlayJson)) // TODO: NullPointerException occurred
