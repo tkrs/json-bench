@@ -133,7 +133,7 @@ trait CirceBench { self: Params =>
   private[this] lazy val rawJson = foos.asJson.noSpaces
 
   @Benchmark
-  def decodeCirce: Seq[Foo[Option]] = cdecode[Seq[Foo[Option]]](rawJson).right.get
+  def decodeCirce: Seq[Foo[Option]] = cdecode[Seq[Foo[Option]]](rawJson).getOrElse(???)
 
   @Benchmark
   def encodeCirce: String = foos.asJson.noSpaces
@@ -147,7 +147,7 @@ trait CirceAutoBench { self: Params =>
   private[this] lazy val rawJson = foos.asJson.noSpaces
 
   @Benchmark
-  def decodeCirceAuto: Seq[Foo[Option]] = cdecode[Seq[Foo[Option]]](rawJson).right.get
+  def decodeCirceAuto: Seq[Foo[Option]] = cdecode[Seq[Foo[Option]]](rawJson).getOrElse(???)
 
   @Benchmark
   def encodeCirceAuto: String = foos.asJson.noSpaces
@@ -162,7 +162,7 @@ trait CirceJacksonAutoBench { self: Params =>
 
   @Benchmark
   def decodeCirceAutoFromBytes: Seq[Foo[Option]] =
-    decodeByteArray[Seq[Foo[Option]]](rawJson.array()).right.get
+    decodeByteArray[Seq[Foo[Option]]](rawJson.array()).getOrElse(???)
 
   @Benchmark
   def encodeCirceAutoToBytes: Array[Byte] = jacksonPrintByteBuffer(foos.asJson).array()
@@ -222,10 +222,10 @@ trait JsoniterScalaBench { self: Params =>
   import com.github.plokhotnyuk.jsoniter_scala.core._
 
   implicit val jsoniterScalaCodec: JsonValueCodec[Seq[Foo[Option]]] =
-    JsonCodecMaker.make[Seq[Foo[Option]]](CodecMakerConfig())
+    JsonCodecMaker.make[Seq[Foo[Option]]](CodecMakerConfig.withAllowRecursiveTypes(true))
 
-  val jsoniterReaderConfig = ReaderConfig(preferredBufSize = 1024 * 1024) // 1Mb
-  val jsoniterWriteConfig  = WriterConfig(preferredBufSize = 1024 * 1024) // 1Mb
+  val jsoniterReaderConfig = ReaderConfig.withPreferredBufSize(1024 * 1024) // 1Mb
+  val jsoniterWriteConfig  = WriterConfig.withPreferredBufSize(1024 * 1024) // 1Mb
 
   private[this] lazy val rawJson = writeToArray(foos)
 
@@ -259,7 +259,7 @@ trait SprayJsonBench { self: Params =>
   import spray.json._
   import DefaultJsonProtocol._
 
-  implicit object FooFormat extends JsonFormat[Foo[Option]] {
+  implicit val fooFormat: JsonFormat[Foo[Option]] = new JsonFormat[Foo[Option]] {
     def read(json: JsValue): Foo[Option] = json match {
       case JsObject(m) =>
         val i = m.get("i").map(_.convertTo[Int]).getOrElse(0)
@@ -270,7 +270,8 @@ trait SprayJsonBench { self: Params =>
         Foo(i, foo)
       case x => throw new Exception(x.toString)
     }
-    def write(obj: Foo[Option]): JsValue = JsObject("i" -> JsNumber(obj.i), "foo" -> obj.foo.toJson)
+    def write(obj: Foo[Option]): JsValue =
+      JsObject("i" -> JsNumber(obj.i), "foo" -> obj.foo.toJson)
   }
 
   private[this] lazy val rawJson = foos.toJson.compactPrint
@@ -303,13 +304,7 @@ trait UPickleBench { self: Params =>
   def decodeUPickle: Seq[Foo[Option]] = read[Seq[Foo[Option]]](rawJson)
 
   @Benchmark
-  def decodeUPickleAst: Seq[Foo[Option]] = readJs[Seq[Foo[Option]]](upickle.json.read(rawJson))
-
-  @Benchmark
   def encodeUPickle: String = write(foos)
-
-  @Benchmark
-  def encodeUPickleAst: String = writeJs(foos).render()
 }
 
 object State {

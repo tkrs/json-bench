@@ -2,8 +2,9 @@ package bench
 
 import bench.State.Data
 import org.scalatest._
+import org.scalatest.funsuite._
 
-class BenchSpec extends FunSuite {
+class BenchSpec extends AnyFunSuite {
 
   def benchTest(f: => String): Assertion = {
     val expected = Seq(
@@ -19,7 +20,7 @@ class BenchSpec extends FunSuite {
       """{"i":1,"foo":{"i":2,"foo":{"i":3,"foo":{"i":4,"foo":{"i":5,"foo":{"i":6,"foo":{"i":7,"foo":{"i":8,"foo":{"i":9,"foo":{"i":10,"foo":null}}}}}}}}}}"""
     ).mkString("[", ",", "]")
     val foos = f
-    println(foos)
+    // println(foos)
     assert(foos === expected)
   }
 
