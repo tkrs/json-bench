@@ -48,9 +48,8 @@ trait Params {
   def depth: Int
 
   @Setup
-  def setup(data: Data): Unit = {
+  def setup(data: Data): Unit =
     foos = data.get(length, depth)
-  }
 }
 
 class Case1 extends Bench with Params {
@@ -112,7 +111,7 @@ trait ArgonautBench { self: Params =>
 }
 
 trait CirceBench { self: Params =>
-  import io.circe.{Decoder, Encoder, Json, DecodingFailure}
+  import io.circe.{Decoder, DecodingFailure, Encoder, Json}
   import io.circe.parser.{decode => cdecode}
   import io.circe.syntax._
 
@@ -191,7 +190,7 @@ trait Json4sBench { self: Params =>
   import native.Serialization.{write => nwrite, read => nread}
 
   // FIXME: MappingException occurs during decoding; I don't know why that happens.
-  private[this] implicit val json4sDefaultFormats: Formats = DefaultFormats.preservingEmptyValues
+  implicit private[this] val json4sDefaultFormats: Formats = DefaultFormats.preservingEmptyValues
 
   private[this] lazy val rawJson = nwrite(foos)
 
@@ -207,7 +206,7 @@ trait Json4sJacksonBench { self: Params =>
   import jackson.Serialization.{write => swrite, read => sread}
 
   // FIXME: MappingException occurs during decoding; I don't know why that happens.
-  private[this] implicit val json4sDefaultFormats: Formats = DefaultFormats.preservingEmptyValues
+  implicit private[this] val json4sDefaultFormats: Formats = DefaultFormats.preservingEmptyValues
 
   private[this] lazy val rawJson = swrite(foos)
 
@@ -243,9 +242,10 @@ trait PlayJsonBench { self: Params =>
 
   // FIXME: NPE occurred...
   implicit val encodeFooPlayJson: Writes[Foo[Option]] = (
-    (JsPath \ "i").write[Int] and
-      (JsPath \ "foo").writeNullable[Foo[Option]]
-  )(unlift(Foo.unapply[Option]))
+    ((JsPath \ "i")
+      .write[Int])
+      .and((JsPath \ "foo").writeNullable[Foo[Option]])
+    )(unlift(Foo.unapply[Option]))
 
   // @Benchmark
   def encodePlayJson: String = Json.stringify(Json.toJson(foos))
@@ -316,10 +316,9 @@ object State {
 
   case class Foo[F[_]](i: Int, foo: F[Foo[F]])
 
-  private def genFoo(i: Int, foo: Foo[Option]): Foo[Option] = {
+  private def genFoo(i: Int, foo: Foo[Option]): Foo[Option] =
     if (i == 0) foo
     else genFoo(i - 1, Foo(i, Some(foo)))
-  }
 
   @State(Scope.Benchmark)
   class Data {
