@@ -51,31 +51,31 @@ class Case1 extends Bench with Params {
   @Param(Array("10"))
   var length: Int = _
   @Param(Array("10"))
-  var depth: Int = _
+  var depth: Int  = _
 }
 class Case2 extends Bench with Params {
   @Param(Array("10"))
   var length: Int = _
   @Param(Array("100"))
-  var depth: Int = _
+  var depth: Int  = _
 }
 class Case3 extends Bench with Params {
   @Param(Array("100"))
   var length: Int = _
   @Param(Array("10"))
-  var depth: Int = _
+  var depth: Int  = _
 }
 class Case4 extends Bench with Params {
   @Param(Array("100"))
   var length: Int = _
   @Param(Array("100"))
-  var depth: Int = _
+  var depth: Int  = _
 }
 class Case5 extends Bench with Params {
   @Param(Array("1"))
   var length: Int = _
   @Param(Array("1000"))
-  var depth: Int = _
+  var depth: Int  = _
 }
 
 trait ArgonautBench { self: Params =>
@@ -92,8 +92,8 @@ trait ArgonautBench { self: Params =>
     }
   }
 
-  implicit val encodeFooForArgonaut: EncodeJson[Foo[Option]] = EncodeJson[Foo[Option]] {
-    case Foo(i, foo) => Json("i" -> Json.jNumber(i), "foo" -> foo.asJson)
+  implicit val encodeFooForArgonaut: EncodeJson[Foo[Option]] = EncodeJson[Foo[Option]] { case Foo(i, foo) =>
+    Json("i" -> Json.jNumber(i), "foo" -> foo.asJson)
   }
 
   private[this] lazy val rawJson = foos.toList.asJson.nospaces
@@ -122,8 +122,8 @@ trait CirceBench { self: Params =>
     }
   }
 
-  implicit val encodeFooCirce: Encoder[Foo[Option]] = Encoder.instance {
-    case Foo(i, foo) => Json.obj("i" := Json.fromInt(i), "foo" := foo.asJson)
+  implicit val encodeFooCirce: Encoder[Foo[Option]] = Encoder.instance { case Foo(i, foo) =>
+    Json.obj("i" := Json.fromInt(i), "foo" := foo.asJson)
   }
 
   private[this] lazy val rawJson = foos.asJson.noSpaces
@@ -190,13 +190,13 @@ trait SprayJsonBench { self: Params =>
   implicit val formatFooSprayJson: JsonFormat[Foo[Option]] = new JsonFormat[Foo[Option]] {
     def read(json: JsValue): Foo[Option] = json match {
       case JsObject(m) =>
-        val i = m.get("i").map(_.convertTo[Int]).getOrElse(0)
+        val i   = m.get("i").map(_.convertTo[Int]).getOrElse(0)
         val foo = m.get("foo").flatMap {
           case JsNull => None
           case a      => a.convertTo[Option[Foo[Option]]]
         }
         Foo(i, foo)
-      case x =>
+      case x           =>
         throw new Exception(x.toString)
     }
     def write(obj: Foo[Option]): JsValue =
