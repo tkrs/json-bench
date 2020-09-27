@@ -3,7 +3,7 @@ import Dependencies._
 ThisBuild / organization := "com.github.tkrs"
 ThisBuild / name := "json-bench"
 ThisBuild / version := "0.1.0-SNAPSHOT"
-ThisBuild / scalaVersion := "2.12.10"
+ThisBuild / scalaVersion := "2.13.3"
 ThisBuild / scalafmtOnCompile := true
 
 libraryDependencies ++= Seq(
